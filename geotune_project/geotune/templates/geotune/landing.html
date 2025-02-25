@@ -1,0 +1,64 @@
+{% extends 'geotune/base.html' %}
+
+{% block title %}GeoTune - Entdecke Musik auf neue Weise{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold">Entdecke Musik auf eine neue Art</h1>
+            <p class="lead my-4">GeoTune verbindet das Geocaching-Erlebnis mit deiner Liebe zur Musik. Finde Playlists in deiner Umgebung, teile deine Lieblingslieder und verbinde dich mit Gleichgesinnten.</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4 me-md-2">
+                    <i class="fas fa-sign-in-alt"></i> Anmelden
+                </a>
+                <a href="{% url 'register' %}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-user-plus"></i> Registrieren
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-6 mt-5 mt-lg-0 text-center">
+            <img src="https://via.placeholder.com/600x400" alt="GeoTune App" class="img-fluid rounded shadow">
+        </div>
+    </div>
+
+    <div class="row mt-5 pt-5">
+        <div class="col-12 text-center mb-5">
+            <h2>Wie funktioniert GeoTune?</h2>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-map-marker-alt fa-2x"></i>
+                    </div>
+                    <h4>1. Entdecken</h4>
+                    <p>Nutze die Karte, um versteckte Playlists in deiner Umgebung zu finden.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-music fa-2x"></i>
+                    </div>
+                    <h4>2. Teilen</h4>
+                    <p>Füge deine Lieblingslieder zu gefundenen Playlists hinzu und erstelle eigene.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                    <h4>3. Verbinden</h4>
+                    <p>Triff Menschen mit ähnlichem Musikgeschmack und gehe gemeinsam auf Playlist-Jagd.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
