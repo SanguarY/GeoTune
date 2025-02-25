@@ -6,6 +6,9 @@ from . import views
 urlpatterns = [
     # Hauptseiten
     path('', views.index, name='index'),
+
+    # Kontoerstellung
+    path('register/', views.register, name='register'),
     
     # Nutzerprofile
     path('profil/', views.nutzerprofil, name='nutzerprofil'),

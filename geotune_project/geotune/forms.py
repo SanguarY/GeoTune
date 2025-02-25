@@ -4,6 +4,13 @@ from django import forms
 from .models import (
     Nutzer, Playlist, Lied, Genre, Standort, Suche
 )
+from django.contrib.auth.forms import UserCreationForm
+from .models import Nutzer
+
+class NutzerCreationForm(UserCreationForm):
+    class Meta:
+        model = Nutzer
+        fields = ['username', 'email', 'password1', 'password2']
 
 class NutzerProfilForm(forms.ModelForm):
     class Meta:

@@ -8,12 +8,14 @@ from django.db.models import Q
 from django.contrib import messages
 from .models import (
     Nutzer, Playlist, Lied, Genre, Standort, 
-    NutzerVerbindung, PlaylistLied, Suche
+    NutzerVerbindung, PlaylistLied, Suche,
+    NutzerPlaylistInteraktion, SuchePlaylist, NutzerSucheTeilnahme
 )
 from .forms import (
     PlaylistForm, LiedForm, NutzerProfilForm,
     StandortForm, SucheForm
 )
+from .forms import NutzerCreationForm
 import json
 from math import radians, cos, sin, asin, sqrt
 
@@ -436,13 +438,13 @@ from django.contrib.auth.forms import UserCreationForm
 def register(request):
     """Registrierung für neue Nutzer"""
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = NutzerCreationForm(request.POST)  # Benutzen Sie das neue Formular
         if form.is_valid():
             user = form.save()
             login(request, user)
             messages.success(request, 'Registrierung erfolgreich!')
             return redirect('index')
     else:
-        form = UserCreationForm()
+        form = NutzerCreationForm()  # Benutzen Sie das neue Formular
     
-    return render(request, 'registration/register.html', {'form': form})
+    return render(request, 'geotune/registration/register.html', {'form': form})
