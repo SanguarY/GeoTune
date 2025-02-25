@@ -1,0 +1,228 @@
+<!-- templates/geotune/playlists_in_der_naehe.html -->
+{% extends 'geotune/base.html' %}
+
+{% block title %}Playlists in der Nähe - GeoTune{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Playlists in der Nähe</h5>
+            </div>
+            <div class="card-body">
+                <p>Entdecke Playlists, die in deiner Nähe versteckt sind!</p>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Bitte erlaube den Standortzugriff, um Playlists in deiner Nähe zu finden.
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-group">
+                        <label for="distanceRange" class="form-label">Suchradius: <span id="distanceValue">5</span> km</label>
+                        <input type="range" class="form-range" id="distanceRange" min="1" max="20" value="5">
+                    </div>
+                    <button id="findPlaylists" class="btn btn-primary">
+                        <i class="fas fa-search-location"></i> Playlists finden
+                    </button>
+                </div>
+                
+                <div id="status" class="alert alert-warning d-none">
+                    Standort wird ermittelt...
+                </div>
+                
+                <div id="playlistResults" class="mt-4">
+                    <!-- Hier werden die gefundenen Playlists angezeigt -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card sticky-top" style="top: 20px;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-map"></i> Karte</h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="map" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Playlist-Karten-Template -->
+<template id="playlistCardTemplate">
+    <div class="card mb-3 playlist-card">
+        <div class="card-body">
+            <h5 class="card-title"></h5>
+            <p class="card-text distance-text"></p>
+            <a href="#" class="btn btn-primary view-btn">
+                <i class="fas fa-eye"></i> Ansehen
+            </a>
+        </div>
+    </div>
+</template>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusDiv = document.getElementById('status');
+        const resultsDiv = document.getElementById('playlistResults');
+        const distanceSlider = document.getElementById('distanceRange');
+        const distanceValue = document.getElementById('distanceValue');
+        const findButton = document.getElementById('findPlaylists');
+        const template = document.getElementById('playlistCardTemplate');
+        
+        // Karte initialisieren
+        const map = L.map('map').setView([49.483889, 8.468056], 13); // Mannheim als Standard
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        let userMarker;
+        let playlistMarkers = [];
+        
+        // Distanz-Slider
+        distanceSlider.addEventListener('input', function() {
+            distanceValue.textContent = this.value;
+        });
+        
+        // Playlists suchen
+        findButton.addEventListener('click', function() {
+            statusDiv.classList.remove('d-none');
+            resultsDiv.innerHTML = '';
+            
+            // Bestehende Marker entfernen
+            playlistMarkers.forEach(marker => map.removeLayer(marker));
+            playlistMarkers = [];
+            
+            // Standort ermitteln
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    // Erfolgreiche Standortermittlung
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        // Karte auf aktuellen Standort zentrieren
+                        map.setView([lat, lng], 13);
+                        
+                        // Benutzermarker
+                        if (userMarker) {
+                            map.removeLayer(userMarker);
+                        }
+                        userMarker = L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                className: 'user-marker',
+                                html: '<i class="fas fa-user position-absolute top-50 start-50 translate-middle text-primary" style="font-size: 24px;"></i>',
+                                iconSize: [40, 40]
+                            })
+                        }).addTo(map);
+                        
+                        // Suchkreis
+                        const radius = distanceSlider.value * 1000; // km zu m
+                        const circle = L.circle([lat, lng], {
+                            radius: radius,
+                            fillColor: '#3388ff',
+                            fillOpacity: 0.1,
+                            color: '#3388ff',
+                            weight: 1
+                        }).addTo(map);
+                        
+                        // Daten an Server senden
+                        fetch('{% url "playlists_in_der_naehe" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrftoken')
+                            },
+                            body: JSON.stringify({
+                                latitude: lat,
+                                longitude: lng,
+                                max_distance: parseInt(distanceSlider.value)
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            statusDiv.classList.add('d-none');
+                            
+                            if (data.playlists.length === 0) {
+                                resultsDiv.innerHTML = '<div class="alert alert-info">Keine Playlists in der Nähe gefunden.</div>';
+                                return;
+                            }
+                            
+                            // Playlists anzeigen
+                            data.playlists.forEach(playlist => {
+                                // Karten-Element erstellen
+                                const clone = template.content.cloneNode(true);
+                                const card = clone.querySelector('.playlist-card');
+                                const title = clone.querySelector('.card-title');
+                                const distance = clone.querySelector('.distance-text');
+                                const viewBtn = clone.querySelector('.view-btn');
+                                
+                                title.textContent = playlist.playlist_name;
+                                distance.textContent = `Entfernung: ${playlist.entfernung} km`;
+                                viewBtn.href = `/playlist/${playlist.playlist_id}/`;
+                                
+                                resultsDiv.appendChild(card);
+                                
+                                // Marker auf der Karte hinzufügen
+                                const marker = L.marker([playlist.standort.lat, playlist.standort.lng])
+                                    .addTo(map)
+                                    .bindPopup(`<b>${playlist.playlist_name}</b><br>Entfernung: ${playlist.entfernung} km<br><a href="/playlist/${playlist.playlist_id}/">Ansehen</a>`);
+                                
+                                playlistMarkers.push(marker);
+                            });
+                        })
+                        .catch(error => {
+                            statusDiv.classList.add('d-none');
+                            resultsDiv.innerHTML = `<div class="alert alert-danger">Fehler beim Abrufen der Playlists: ${error.message}</div>`;
+                        });
+                    },
+                    // Fehler bei der Standortermittlung
+                    function(error) {
+                        statusDiv.classList.add('d-none');
+                        let errorMessage = 'Fehler bei der Standortermittlung.';
+                        
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = 'Standortabfrage wurde verweigert. Bitte erlaube den Standortzugriff.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = 'Standortdaten sind nicht verfügbar.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = 'Zeitüberschreitung bei der Standortabfrage.';
+                                break;
+                        }
+                        
+                        resultsDiv.innerHTML = `<div class="alert alert-danger">${errorMessage}</div>`;
+                    }
+                );
+            } else {
+                statusDiv.classList.add('d-none');
+                resultsDiv.innerHTML = '<div class="alert alert-danger">Geolocation wird von deinem Browser nicht unterstützt.</div>';
+            }
+        });
+        
+        // CSRF Cookie für POST-Anfragen
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %}

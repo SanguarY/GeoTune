@@ -1,0 +1,44 @@
+{% extends 'geotune/base.html' %}
+
+{% block title %}GeoTune - Musik entdecken{% endblock %}
+
+{% block content %}
+<div class="jumbotron p-5 mb-4 bg-light rounded-3">
+    <div class="container py-5">
+        <h1 class="display-5 fw-bold">Willkommen bei GeoTune!</h1>
+        <p class="col-md-8 fs-4">Entdecke Musik auf eine völlig neue Art. Finde Playlists in deiner Nähe, teile deine Lieblingslieder und triff Gleichgesinnte.</p>
+        <a class="btn btn-primary btn-lg" href="{% url 'playlists_in_der_naehe' %}">
+            <i class="fas fa-map-marker-alt"></i> Playlists in der Nähe finden
+        </a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-map-marker-alt"></i> Entdecken</h5>
+                    <p class="card-text">Finde versteckte Playlists in deiner Umgebung und entdecke neue Musik.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-music"></i> Teilen</h5>
+                    <p class="card-text">Füge deine Lieblingslieder zu Playlists hinzu und teile sie mit anderen.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-users"></i> Verbinden</h5>
+                    <p class="card-text">Finde Menschen mit ähnlichem Musikgeschmack und gehe gemeinsam auf Playlist-Jagd.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
