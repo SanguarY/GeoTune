@@ -9,6 +9,7 @@ urlpatterns = [
 
     # Kontoerstellung
     path('register/', views.register, name='register'),
+    path('login/', views.login, name='login'),
     
     # Nutzerprofile
     path('profil/', views.nutzerprofil, name='nutzerprofil'),
