@@ -448,3 +448,8 @@ def register(request):
         form = NutzerCreationForm()  # Benutzen Sie das neue Formular
     
     return render(request, 'geotune/registration/register.html', {'form': form})
+
+def custom_logout(request):
+    from django.contrib.auth import logout
+    logout(request)
+    return redirect('index')

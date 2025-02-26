@@ -1,0 +1,260 @@
+{% extends 'geotune/base.html' %}
+
+{% block title %}{{ suche.name }} - GeoTune{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Suche Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h1 class="mb-1">{{ suche.name }}</h1>
+                            <p class="text-muted mb-2">
+                                Erstellt von <a href="{% url 'nutzerprofil' suche.erstellt_von.id %}">{{ suche.erstellt_von.username }}</a>
+                            </p>
+                            <p>{{ suche.beschreibung }}</p>
+                            
+                            <div class="mb-2">
+                                <span class="badge bg-primary me-2">Startdatum: {{ suche.startdatum|date:"d.m.Y" }}</span>
+                                {% if suche.enddatum %}
+                                    <span class="badge bg-secondary">Enddatum: {{ suche.enddatum|date:"d.m.Y" }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">Unbefristet</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mt-3">
+                                <span class="me-3">
+                                    <i class="fas fa-user-friends"></i> {{ suche.teilnehmer.count }} Teilnehmer
+                                </span>
+                                <span>
+                                    <i class="fas fa-music"></i> {{ suche_playlists|length }} Playlists
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            {% if teilnahme.abgeschlossen %}
+                                <span class="badge bg-success p-2">
+                                    <i class="fas fa-check-circle"></i> Abgeschlossen
+                                </span>
+                            {% else %}
+                                <div class="progress" style="width: 150px; height: 25px;">
+                                    <div id="progress-main" class="progress-bar bg-success" 
+                                         role="progressbar" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100"
+                                         title="Fortschritt"
+                                         data-progress="{{ teilnahme.fortschritt }}">
+                                        {{ teilnahme.fortschritt }}%
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Playlists der Suche -->
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-list"></i> Playlists in dieser Suche</h4>
+                </div>
+                <div class="card-body">
+                    {% if suche_playlists %}
+                        <div class="row">
+                            {% for sp in suche_playlists %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100 {% if sp.reihenfolge_nummer <= teilnahme.fortschritt %}border-success{% else %}border-secondary{% endif %}">
+                                    <div class="card-header d-flex justify-content-between align-items-center
+                                        {% if sp.reihenfolge_nummer <= teilnahme.fortschritt %}bg-success text-white{% endif %}">
+                                        <span>
+                                            #{{ sp.reihenfolge_nummer }}
+                                        </span>
+                                        {% if sp.reihenfolge_nummer <= teilnahme.fortschritt %}
+                                            <span><i class="fas fa-check-circle"></i> Gefunden</span>
+                                        {% else %}
+                                            {% if sp.reihenfolge_nummer == teilnahme.fortschritt + 1 %}
+                                                <span class="badge bg-warning text-dark">Nächstes Ziel</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Noch nicht verfügbar</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ sp.playlist.name }}</h5>
+                                        
+                                        {% if sp.playlist.standorte.count > 0 %}
+                                            <p class="text-muted">
+                                                <i class="fas fa-map-marker-alt"></i> {{ sp.playlist.standorte.count }} Standort(e)
+                                            </p>
+                                        {% endif %}
+                                        
+                                        {% if sp.playlist.genres.all %}
+                                        <div class="mb-2">
+                                            {% for genre in sp.playlist.genres.all %}
+                                            <span class="badge bg-secondary">{{ genre.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if sp.reihenfolge_nummer <= teilnahme.fortschritt or suche.erstellt_von == user %}
+                                            <a href="{% url 'playlist_detail' sp.playlist.id %}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i> Ansehen
+                                            </a>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-secondary" disabled>
+                                                <i class="fas fa-lock"></i> Gesperrt
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Diese Suche enthält noch keine Playlists.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Teilnehmer und Fortschritt -->
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-users"></i> Teilnehmer</h4>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for tn in suche.teilnehmer.all %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{% url 'nutzerprofil' tn.id %}" class="text-decoration-none">
+                                    {{ tn.username }}
+                                </a>
+                            </div>
+                            
+                            {% with tn_teilnahme=tn.nutzersucheteilnahme_set.get %}
+                            <div class="text-end">
+                                {% if tn_teilnahme.abgeschlossen %}
+                                    <span class="badge bg-success">Abgeschlossen</span>
+                                {% else %}
+                                    <div class="progress" style="width: 100px; height: 15px;">
+                                        <div class="progress-bar progress-user bg-primary" 
+                                             role="progressbar" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100"
+                                             title="Fortschritt"
+                                             data-progress="{{ tn_teilnahme.fortschritt }}">
+                                            {{ tn_teilnahme.fortschritt }}%
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endwith %}
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">Noch keine Teilnehmer.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            {% if teilnahme.fortschritt > 0 and not teilnahme.abgeschlossen %}
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-map"></i> Karte zum nächsten Ziel</h4>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map" style="height: 300px;"></div>
+                </div>
+                <div class="card-footer">
+                    <p class="mb-0">
+                        <i class="fas fa-info-circle"></i> Die Karte zeigt einen ungefähren Bereich, in dem sich die nächste Playlist befindet.
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Hilfsdaten für JavaScript -->
+<div id="map-data" 
+     data-should-show-map="{% if teilnahme.fortschritt > 0 and not teilnahme.abgeschlossen %}true{% else %}false{% endif %}" 
+     data-mannheim-lat="49.483889" 
+     data-mannheim-lng="8.468056"
+     style="display: none;">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fortschrittsbalken initialisieren
+        initializeProgressBars();
+        
+        // Kartenanzeige initialisieren
+        initializeMap();
+    });
+    
+    function initializeProgressBars() {
+        // Hauptfortschrittsbalken
+        const mainProgress = document.getElementById('progress-main');
+        if (mainProgress) {
+            const progress = mainProgress.getAttribute('data-progress');
+            mainProgress.style.width = progress + '%';
+            mainProgress.setAttribute('aria-valuenow', progress);
+        }
+        
+        // Nutzerfortschrittsbalken
+        const userProgresses = document.querySelectorAll('.progress-user');
+        userProgresses.forEach(function(element) {
+            const progress = element.getAttribute('data-progress');
+            element.style.width = progress + '%';
+            element.setAttribute('aria-valuenow', progress);
+        });
+    }
+    
+    function initializeMap() {
+        // Map-Daten abrufen
+        const mapData = document.getElementById('map-data');
+        if (!mapData) return;
+        
+        const shouldShowMap = mapData.getAttribute('data-should-show-map') === 'true';
+        const mapElement = document.getElementById('map');
+        
+        // Karte nur initialisieren, wenn sie angezeigt werden soll und das Element existiert
+        if (shouldShowMap && mapElement) {
+            // Karte initialisieren
+            const map = L.map('map');
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Koordinaten aus dem Datenelement lesen
+            const lat = parseFloat(mapData.getAttribute('data-mannheim-lat'));
+            const lng = parseFloat(mapData.getAttribute('data-mannheim-lng'));
+            
+            // Ungefähren Bereich anzeigen (ca. 500m Radius)
+            const circle = L.circle([lat, lng], {
+                radius: 500,
+                color: '#28a745',
+                fillColor: '#28a745',
+                fillOpacity: 0.2
+            }).addTo(map);
+            
+            map.setView([lat, lng], 14);
+        }
+    }
+</script>
+{% endblock %}

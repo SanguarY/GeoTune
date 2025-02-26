@@ -1,0 +1,62 @@
+{% extends 'geotune/base.html' %}
+
+{% block title %}Nutzer suchen - GeoTune{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-search"></i> Nutzer suchen</h3>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="Suche nach Nutzernamen..." value="{{ suche }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Suchen
+                            </button>
+                        </div>
+                    </form>
+                    
+                    {% if suche %}
+                        <h4>Suchergebnisse für "{{ suche }}"</h4>
+                        
+                        {% if nutzer %}
+                            <div class="list-group">
+                                {% for n in nutzer %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <a href="{% url 'nutzerprofil' n.id %}" class="text-decoration-none">
+                                                <h5 class="mb-1">{{ n.username }}</h5>
+                                            </a>
+                                            {% if n.first_name or n.last_name %}
+                                                <p class="mb-1 text-muted">{{ n.first_name }} {{ n.last_name }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <a href="{% url 'nutzerprofil' n.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-user"></i> Profil ansehen
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Keine Nutzer gefunden.
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                            <p class="lead">Gib einen Suchbegriff ein, um nach anderen Nutzern zu suchen.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

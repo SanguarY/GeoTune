@@ -1,0 +1,136 @@
+{% extends 'geotune/base.html' %}
+
+{% block title %}{{ profil_nutzer.username }} - Profil | GeoTune{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Profil-Header -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center">
+                            {% if profil_nutzer.profilbild %}
+                                <img src="{{ profil_nutzer.profilbild.url }}" alt="Profilbild" class="rounded-circle img-fluid" style="max-width: 120px;">
+                            {% else %}
+                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
+                                    <i class="fas fa-user fa-4x text-white"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-7">
+                            <h2>{{ profil_nutzer.username }}</h2>
+                            <p class="text-muted">
+                                {% if profil_nutzer.first_name or profil_nutzer.last_name %}
+                                    {{ profil_nutzer.first_name }} {{ profil_nutzer.last_name }}
+                                {% endif %}
+                            </p>
+                            {% if profil_nutzer.bio %}
+                                <p>{{ profil_nutzer.bio }}</p>
+                            {% endif %}
+                            {% if profil_nutzer.premium_status %}
+                                <span class="badge bg-warning text-dark">Premium</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3 text-end">
+                            {% if not ist_eigenes_profil %}
+                                {% if verbindungsstatus == 'akzeptiert' %}
+                                    <span class="badge bg-success mb-2">Verbunden</span>
+                                {% elif verbindungsstatus == 'angefragt' %}
+                                    <span class="badge bg-warning text-dark mb-2">Anfrage gesendet</span>
+                                {% elif verbindungsstatus == 'blockiert' %}
+                                    <span class="badge bg-danger mb-2">Blockiert</span>
+                                {% else %}
+                                    <a href="{% url 'verbindung_anfordern' profil_nutzer.id %}" class="btn btn-primary mb-2">
+                                        <i class="fas fa-user-plus"></i> Verbindung anfragen
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profil bearbeiten (nur eigenes Profil) -->
+        {% if ist_eigenes_profil %}
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-edit"></i> Profil bearbeiten</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <small class="form-text text-muted">{{ field.help_text }}</small>
+                            {% endif %}
+                            {% for error in field.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Playlists -->
+        <div class="col-md-{% if ist_eigenes_profil %}8{% else %}12{% endif %}">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-music"></i> Playlists</h5>
+                    {% if ist_eigenes_profil %}
+                    <a href="{% url 'playlist_erstellen' %}" class="btn btn-sm btn-light">
+                        <i class="fas fa-plus"></i> Neue Playlist
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if playlists %}
+                        <div class="row">
+                            {% for playlist in playlists %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100 playlist-card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ playlist.name }}</h5>
+                                        <p class="card-text text-muted small">
+                                            {{ playlist.erstellungsdatum|date:"d.m.Y" }}
+                                            <br>
+                                            {{ playlist.lieder.count }} Lieder
+                                        </p>
+                                        {% if playlist.genres.all %}
+                                        <div class="mb-2">
+                                            {% for genre in playlist.genres.all %}
+                                            <span class="badge bg-secondary">{{ genre.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Ansehen
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Keine Playlists vorhanden.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

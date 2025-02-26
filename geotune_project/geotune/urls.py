@@ -11,7 +11,7 @@ urlpatterns = [
     # Kontoerstellung
     path('register/', views.register, name='register'),
     path('login/', auth_views.LoginView.as_view(template_name='geotune/registration/login.html'), name='login'), # type: ignore
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'), # type: ignore
+    path('logout/', views.custom_logout, name='logout'),
     
     # Nutzerprofile
     path('profil/', views.nutzerprofil, name='nutzerprofil'),

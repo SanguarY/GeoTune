@@ -1,0 +1,156 @@
+{% extends 'geotune/base.html' %}
+
+{% block title %}Neue Playlist-Suche erstellen - GeoTune{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-search"></i> Neue Playlist-Suche erstellen</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-info-circle"></i> Erstelle eine Playlist-Suche, um mehrere deiner Playlists zu einer Schatzsuche zu verbinden!
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.beschreibung.id_for_label }}" class="form-label">{{ form.beschreibung.label }}</label>
+                            {{ form.beschreibung }}
+                            {% if form.beschreibung.errors %}
+                                <div class="invalid-feedback d-block">{{ form.beschreibung.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.startdatum.id_for_label }}" class="form-label">{{ form.startdatum.label }}</label>
+                                {{ form.startdatum }}
+                                {% if form.startdatum.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.startdatum.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.enddatum.id_for_label }}" class="form-label">{{ form.enddatum.label }}</label>
+                                {{ form.enddatum }}
+                                {% if form.enddatum.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.enddatum.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Optional. Leer lassen für eine unbefristete Suche.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Playlists auswählen</label>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> Wichtig: Die Reihenfolge der ausgewählten Playlists bestimmt die Reihenfolge der Suche.
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">Nr.</th>
+                                            <th>Auswählen</th>
+                                            <th>Name</th>
+                                            <th>Standorte</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="playlist-list">
+                                        {% for playlist in eigene_playlists %}
+                                        <tr>
+                                            <td>
+                                                <span class="order-number badge bg-secondary">-</span>
+                                            </td>
+                                            <td>
+                                                <div class="form-check">
+                                                    <input type="checkbox" class="form-check-input playlist-checkbox" id="playlist-{{ playlist.id }}" value="{{ playlist.id }}" name="playlists">
+                                                    <input type="hidden" name="playlist_order[]" value="{{ playlist.id }}" disabled>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <label for="playlist-{{ playlist.id }}" class="form-check-label">
+                                                    {{ playlist.name }}
+                                                </label>
+                                            </td>
+                                            <td>
+                                                {{ playlist.standorte.count }} Standort(e)
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                Du hast noch keine Playlists erstellt.
+                                                <br>
+                                                <a href="{% url 'playlist_erstellen' %}" class="btn btn-sm btn-primary mt-2">
+                                                    <i class="fas fa-plus"></i> Playlist erstellen
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'index' %}" class="btn btn-secondary">Abbrechen</a>
+                            <button type="submit" class="btn btn-primary">Suche erstellen</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.playlist-checkbox');
+        const orderNumbers = document.querySelectorAll('.order-number');
+        const orderInputs = document.querySelectorAll('input[name="playlist_order[]"]');
+        
+        // Funktion zum Aktualisieren der Reihenfolge
+        function updateOrder() {
+            let order = 1;
+            
+            checkboxes.forEach((checkbox, index) => {
+                if (checkbox.checked) {
+                    orderNumbers[index].textContent = order;
+                    orderNumbers[index].classList.remove('bg-secondary');
+                    orderNumbers[index].classList.add('bg-primary');
+                    
+                    orderInputs[index].disabled = false;
+                    
+                    order++;
+                } else {
+                    orderNumbers[index].textContent = '-';
+                    orderNumbers[index].classList.remove('bg-primary');
+                    orderNumbers[index].classList.add('bg-secondary');
+                    
+                    orderInputs[index].disabled = true;
+                }
+            });
+        }
+        
+        // Event-Listener für Checkbox-Änderungen
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateOrder);
+        });
+    });
+</script>
+{% endblock %}

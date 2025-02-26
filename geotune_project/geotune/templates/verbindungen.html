@@ -1,0 +1,112 @@
+{% extends 'geotune/base.html' %}
+
+{% block title %}Meine Verbindungen - GeoTune{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Erhaltene Anfragen -->
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-bell"></i> Erhaltene Anfragen 
+                        {% if erhaltene_anfragen %}
+                            <span class="badge bg-primary">{{ erhaltene_anfragen|length }}</span>
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if erhaltene_anfragen %}
+                        <div class="list-group">
+                            {% for anfrage in erhaltene_anfragen %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <a href="{% url 'nutzerprofil' anfrage.nutzer1.id %}" class="text-decoration-none">
+                                        <h5 class="mb-0">{{ anfrage.nutzer1.username }}</h5>
+                                    </a>
+                                    <small class="text-muted">{{ anfrage.erstellungsdatum|date:"d.m.Y" }}</small>
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <a href="{% url 'verbindung_status_aendern' anfrage.id 'akzeptiert' %}" class="btn btn-sm btn-success me-2">
+                                        <i class="fas fa-check"></i> Akzeptieren
+                                    </a>
+                                    <a href="{% url 'verbindung_status_aendern' anfrage.id 'abgelehnt' %}" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-times"></i> Ablehnen
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Keine ausstehenden Anfragen.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gesendete Anfragen -->
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-paper-plane"></i> Gesendete Anfragen</h4>
+                </div>
+                <div class="card-body">
+                    {% if gesendete_anfragen %}
+                        <div class="list-group">
+                            {% for anfrage in gesendete_anfragen %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <a href="{% url 'nutzerprofil' anfrage.nutzer2.id %}" class="text-decoration-none">
+                                            <h5 class="mb-0">{{ anfrage.nutzer2.username }}</h5>
+                                        </a>
+                                        <small class="text-muted">Gesendet am {{ anfrage.erstellungsdatum|date:"d.m.Y" }}</small>
+                                    </div>
+                                    <span class="badge bg-warning text-dark">Ausstehend</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Keine gesendeten Anfragen.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aktive Verbindungen -->
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-friends"></i> Meine Verbindungen</h4>
+                </div>
+                <div class="card-body">
+                    {% if aktive_verbindungen %}
+                        <div class="list-group">
+                            {% for verbindung in aktive_verbindungen %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{% url 'nutzerprofil' verbindung.nutzer.id %}" class="text-decoration-none">
+                                        <h5 class="mb-0">{{ verbindung.nutzer.username }}</h5>
+                                    </a>
+                                    <a href="{% url 'verbindung_status_aendern' verbindung.verbindung.id 'blockiert' %}" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-ban"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Keine aktiven Verbindungen.</p>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'nutzer_empfehlungen' %}" class="btn btn-primary">
+                                <i class="fas fa-users"></i> Nutzer finden
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
