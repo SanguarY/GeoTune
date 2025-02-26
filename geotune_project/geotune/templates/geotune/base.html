@@ -84,13 +84,13 @@
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li class="nav-item">
-                                    <form method="post" action="{% url 'logout' %}" id="logout-form" style="display: none;">
-                                        {% csrf_token %}
-                                    </form>
-                                    <a class="dropdown-item" href="#" onclick="document.getElementById('logout-form').submit(); return false;">
-                                        <i class="fas fa-sign-out-alt"></i> Abmelden
-                                    </a>
+                                <a class="dropdown-item" href="{% url 'logout' %}" 
+                                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                    <i class="fas fa-sign-out-alt"></i> Abmelden
+                                </a>
+                                <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
+                                    {% csrf_token %}
+                                </form>
                                 </li>
                             </ul>
                         </li>
