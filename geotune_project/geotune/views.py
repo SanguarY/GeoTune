@@ -9,7 +9,8 @@ from django.contrib import messages
 from .models import (
     Nutzer, Playlist, Lied, Genre, Standort, 
     NutzerVerbindung, PlaylistLied, Suche,
-    NutzerPlaylistInteraktion, SuchePlaylist, NutzerSucheTeilnahme
+    NutzerPlaylistInteraktion, SuchePlaylist, NutzerSucheTeilnahme, 
+    NutzerGenrePraeferenz, PlaylistStandort
 )
 from .forms import (
     PlaylistForm, LiedForm, NutzerProfilForm,
