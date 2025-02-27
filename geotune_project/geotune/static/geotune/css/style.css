@@ -1,14 +1,477 @@
-.user-marker {
-    z-index: 1000;
-}
+/* GeoTune - Vollständiges CSS ohne Konflikte */
 
-.card {
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.playlist-card:hover {
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+/*-------------------------------------
+ * Basis-Variablen
+ *-------------------------------------*/
+ :root {
+    /* Hauptfarbpalette - reduziert auf 2 Hauptfarben */
+    --primary: #e83a7a;       /* Pink/Rosa aus dem Logo */
+    --primary-dark: #d02c6a;  /* Dunkleres Pink für Hover */
+    --primary-light: #f14b8b; /* Helleres Pink */
+    
+    --dark: #222222;          /* Dunkelgrau/Fast Schwarz */
+    --dark-light: #333333;    /* Etwas helleres Grau */
+    
+    /* Textfarben */
+    --text-dark: #333333;     /* Dunkler Text */
+    --text-light: #ffffff;    /* Heller Text */
+    --text-muted: #888888;    /* Abgeschwächter Text */
+    
+    /* UI-Farben */
+    --bg-light: #f5f5f5;      /* Hellgrauer Hintergrund */
+    --bg-white: #ffffff;      /* Weißer Hintergrund */
+    --border-light: #e0e0e0;  /* Helle Rahmenfarbe */
+    
+    /* Utility-Variablen */
+    --border-radius: 8px;     /* Grundlegende Abrundung */
+    --box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); /* Grundlegender Schatten */
+    --transition: all 0.2s;  /* Grundlegende Übergangszeit */
+  }
+  
+  /*-------------------------------------
+   * Grundlegende Stile
+   *-------------------------------------*/
+  body {
+    font-family: 'Segoe UI', 'Roboto', sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    line-height: 1.6;
+  }
+  
+  a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: var(--transition);
+  }
+  
+  a:hover, a:focus {
+    color: var(--primary-dark);
+    text-decoration: none;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--text-dark);
+    font-weight: 600;
+  }
+  
+  /*-------------------------------------
+   * Navigationsleiste
+   *-------------------------------------*/
+  .navbar {
+    background-color: var(--dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 0.6rem 1rem;
+  }
+  
+  .navbar-brand {
+    font-weight: 700;
+    color: var(--text-light) !important;
+  }
+  
+  .navbar-dark .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0.6rem 1rem;
+    transition: var(--transition);
+  }
+  
+  .navbar-dark .navbar-nav .nav-link:hover,
+  .navbar-dark .navbar-nav .nav-link:focus {
+    color: var(--text-light);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .navbar-toggler {
+    padding: 0.25rem 0.5rem;
+    border: none;
+  }
+  
+  .dropdown-menu {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+  }
+  
+  .dropdown-item {
+    padding: 0.6rem 1.5rem;
+    transition: var(--transition);
+  }
+  
+  .dropdown-item:hover {
+    background-color: rgba(232, 58, 122, 0.05);
+  }
+  
+  /*-------------------------------------
+   * Jumbotron / Hero
+   *-------------------------------------*/
+  .jumbotron, div.jumbotron {
+    background-color: var(--dark);
+    color: var(--text-light);
+    padding: 3rem 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  
+  .jumbotron h1, div.jumbotron h1,
+  .jumbotron h2, div.jumbotron h2,
+  .jumbotron p, div.jumbotron p,
+  .jumbotron .lead, div.jumbotron .lead {
+    color: var(--text-light) !important;
+  }
+  
+  .jumbotron h1, div.jumbotron h1 {
+    font-weight: 700;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .jumbotron p, div.jumbotron p {
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Alternativer heller Jumbotron */
+  .jumbotron.bg-light, div.jumbotron.bg-light {
+    background-color: var(--bg-white);
+    color: var(--text-dark);
+    border: 1px solid var(--border-light);
+  }
+  
+  .jumbotron.bg-light h1, div.jumbotron.bg-light h1,
+  .jumbotron.bg-light h2, div.jumbotron.bg-light h2,
+  .jumbotron.bg-light p, div.jumbotron.bg-light p,
+  .jumbotron.bg-light .lead, div.jumbotron.bg-light .lead {
+    color: var(--text-dark) !important;
+  }
+  
+  /*-------------------------------------
+   * Buttons
+   *-------------------------------------*/
+  .btn {
+    border-radius: 4px;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
+    transition: var(--transition);
+  }
+  
+  .btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--text-light);
+  }
+  
+  .btn-primary:hover, 
+  .btn-primary:focus {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: var(--text-light);
+    box-shadow: 0 4px 8px rgba(232, 58, 122, 0.25);
+  }
+  
+  .btn-secondary {
+    background-color: var(--dark-light);
+    border-color: var(--dark-light);
+    color: var(--text-light);
+  }
+  
+  .btn-secondary:hover, 
+  .btn-secondary:focus {
+    background-color: var(--dark);
+    border-color: var(--dark);
+    color: var(--text-light);
+  }
+  
+  .btn-outline-primary {
+    color: var(--primary);
+    border-color: var(--primary);
+  }
+  
+  .btn-outline-primary:hover, 
+  .btn-outline-primary:focus {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--text-light);
+  }
+  
+  .btn-success {
+    color: var(--text-light);
+  }
+  
+  .btn-danger {
+    color: var(--text-light);
+  }
+  
+  .btn-warning {
+    color: var(--text-dark);
+  }
+  
+  .btn-info {
+    color: var(--text-light);
+  }
+  
+  /*-------------------------------------
+   * Cards
+   *-------------------------------------*/
+  .card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 1.5rem;
+    background-color: var(--bg-white);
+  }
+  
+  .card-header {
+    background-color: var(--bg-white);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+  }
+  
+  .card-header.bg-primary {
+    background-color: var(--primary) !important;
+    color: var(--text-light);
+    border-bottom: none;
+  }
+  
+  .card-header.bg-dark {
+    background-color: var(--dark) !important;
+    color: var(--text-light);
+    border-bottom: none;
+  }
+  
+  .card-body {
+    padding: 1.25rem;
+  }
+  
+  .card-title {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  
+  .card-footer {
+    background-color: rgba(0, 0, 0, 0.02);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.75rem 1.25rem;
+  }
+  
+  .playlist-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .playlist-card:hover {
     transform: translateY(-3px);
-    transition: all 0.3s ease;
-}
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  /*-------------------------------------
+   * Listen und Badges
+   *-------------------------------------*/
+  .list-group-item {
+    border-color: rgba(0, 0, 0, 0.05);
+    padding: 0.75rem 1.25rem;
+    transition: var(--transition);
+    background-color: var(--bg-white);
+  }
+  
+  .list-group-item:hover {
+    background-color: rgba(232, 58, 122, 0.05);
+  }
+  
+  .badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    border-radius: 30px;
+  }
+  
+  .badge-primary {
+    background-color: var(--primary);
+    color: var(--text-light);
+  }
+  
+  .badge-dark {
+    background-color: var(--dark);
+    color: var(--text-light);
+  }
+  
+  /*-------------------------------------
+   * Formulare
+   *-------------------------------------*/
+  .form-control {
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 0.75rem;
+    transition: var(--transition);
+  }
+  
+  .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(232, 58, 122, 0.15);
+  }
+  
+  .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+  }
+  
+  /*-------------------------------------
+   * Tabellen
+   *-------------------------------------*/
+  .table {
+    background-color: var(--bg-white);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+    margin-bottom: 1.5rem;
+  }
+  
+  .table thead th {
+    background-color: rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+  }
+  
+  .table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+  }
+  
+  .table-hover tbody tr:hover {
+    background-color: rgba(232, 58, 122, 0.05);
+  }
+  
+  /*-------------------------------------
+   * Alerts und Nachrichten
+   *-------------------------------------*/
+  .alert {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .alert-primary {
+    background-color: rgba(232, 58, 122, 0.1);
+    color: var(--primary-dark);
+  }
+  
+  /*-------------------------------------
+   * Karten und Marker
+   *-------------------------------------*/
+  #map {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+    height: 400px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .user-marker {
+    z-index: 1000;
+  }
+  
+  .user-marker i {
+    color: var(--primary);
+    font-size: 24px;
+    text-shadow: 0 0 5px white;
+  }
+  
+  /*-------------------------------------
+   * Footer (Spezifisch und eindeutig)
+   *-------------------------------------*/
+  footer, 
+  .footer, 
+  .mt-auto.py-3.bg-light, 
+  .footer-container {
+    background-color: var(--dark) !important;
+    color: var(--text-light) !important;
+    padding: 2rem 0;
+    margin-top: 3rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  footer span, 
+  footer .text-muted, 
+  .footer span, 
+  .footer .text-muted, 
+  .mt-auto.py-3.bg-light span, 
+  .mt-auto.py-3.bg-light .text-muted {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+  
+  footer a, 
+  .footer a, 
+  .mt-auto.py-3.bg-light a {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+  
+  footer a:hover, 
+  .footer a:hover, 
+  .mt-auto.py-3.bg-light a:hover {
+    color: var(--text-light) !important;
+  }
+  
+  /*-------------------------------------
+   * Bootstrap Overrides
+   *-------------------------------------*/
+  .bg-primary {
+    background-color: var(--primary) !important;
+    color: var(--text-light) !important;
+  }
+  
+  .bg-dark {
+    background-color: var(--dark) !important;
+    color: var(--text-light) !important;
+  }
+  
+  .bg-light {
+    background-color: var(--bg-light) !important;
+  }
+  
+  .text-primary {
+    color: var(--primary) !important;
+  }
+  
+  .text-dark {
+    color: var(--text-dark) !important;
+  }
+  
+  .text-muted {
+    color: var(--text-muted) !important;
+  }
+  
+  .border-primary {
+    border-color: var(--primary) !important;
+  }
+  
+  /*-------------------------------------
+   * Responsive Anpassungen
+   *-------------------------------------*/
+  @media (max-width: 767.98px) {
+    .jumbotron, div.jumbotron {
+      padding: 2rem 1rem;
+    }
+    
+    .card {
+      margin-bottom: 1rem;
+    }
+    
+    .navbar-nav .dropdown-menu {
+      border: none;
+      box-shadow: none;
+      padding-left: 1rem;
+    }
+    
+    .table-responsive {
+      box-shadow: none;
+    }
+  }
