@@ -8,7 +8,8 @@
         <div class="col-lg-6">
             <div class="position-relative">
                 <h1 class="display-4 fw-bold">Entdecke Musik auf eine neue Art</h1>
-                <img src="geotune_project\geotune\templates\media\GeoTune_Logo.jpg" alt="GeoTune Logo" class="position-absolute" style="top: -20px; right: 0; height: 60px; opacity: 0.9;">
+                {% load static %}
+                <img src="{% static 'media/GeoTune_Logo.jpg' %}" alt="GeoTune Logo" class="position-absolute" style="top: -20px; right: 0; height: 60px; opacity: 0.9;">
             </div>
             <p class="lead my-4">GeoTune verbindet das Geocaching-Erlebnis mit deiner Liebe zur Musik. Finde Playlists in deiner Umgebung, teile deine Lieblingslieder und verbinde dich mit Gleichgesinnten.</p>
             <div class="d-grid gap-2 d-md-flex justify-content-md-start">
@@ -21,7 +22,8 @@
             </div>
         </div>
         <div class="col-lg-6 mt-5 mt-lg-0 text-center">
-            <img src="geotune_project\geotune\templates\media\GeoTune_Logo.jpg" alt="GeoTune App" class="img-fluid rounded shadow">
+            {% load static %}
+            <img src="{% static 'media/GeoTune_Logo.jpg' %}" alt="GeoTune App" class="img-fluid rounded shadow">
         </div>
     </div>
 
