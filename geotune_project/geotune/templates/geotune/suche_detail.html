@@ -1,4 +1,5 @@
 {% extends 'geotune/base.html' %}
+{% load custom_filters %}
 
 {% block title %}{{ suche.name }} - GeoTune{% endblock %}
 
@@ -81,7 +82,7 @@
                                         {% if sp.reihenfolge_nummer <= teilnahme.fortschritt %}
                                             <span><i class="fas fa-check-circle"></i> Gefunden</span>
                                         {% else %}
-                                            {% if sp.reihenfolge_nummer == teilnahme.fortschritt + 1 %}
+                                        {% if sp.reihenfolge_nummer == teilnahme.fortschritt|add:1 %}
                                                 <span class="badge bg-warning text-dark">Nächstes Ziel</span>
                                             {% else %}
                                                 <span class="badge bg-secondary">Noch nicht verfügbar</span>
@@ -134,17 +135,16 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group">
-                        {% for tn in suche.teilnehmer.all %}
+                        {% for info in teilnehmer_infos %}
                         <div class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
-                                <a href="{% url 'nutzerprofil' tn.id %}" class="text-decoration-none">
-                                    {{ tn.username }}
+                                <a href="{% url 'nutzerprofil' info.nutzer.id %}" class="text-decoration-none">
+                                    {{ info.nutzer.username }}
                                 </a>
                             </div>
                             
-                            {% with tn_teilnahme=tn.nutzersucheteilnahme_set.get %}
                             <div class="text-end">
-                                {% if tn_teilnahme.abgeschlossen %}
+                                {% if info.teilnahme.abgeschlossen %}
                                     <span class="badge bg-success">Abgeschlossen</span>
                                 {% else %}
                                     <div class="progress" style="width: 100px; height: 15px;">
@@ -153,13 +153,12 @@
                                              aria-valuemin="0" 
                                              aria-valuemax="100"
                                              title="Fortschritt"
-                                             data-progress="{{ tn_teilnahme.fortschritt }}">
-                                            {{ tn_teilnahme.fortschritt }}%
+                                             data-progress="{{ info.teilnahme.fortschritt }}">
+                                            {{ info.teilnahme.fortschritt }}%
                                         </div>
                                     </div>
                                 {% endif %}
                             </div>
-                            {% endwith %}
                         </div>
                         {% empty %}
                         <p class="text-muted">Noch keine Teilnehmer.</p>

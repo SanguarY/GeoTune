@@ -11,3 +11,8 @@ def modulo(value, arg):
 def intdiv(value, arg):
     """Gibt das Ergebnis der ganzzahligen Division von value durch arg zurück"""
     return int(value) // int(arg)
+
+@register.filter
+def add(value, arg):
+    """Addiert zwei Zahlen"""
+    return value + arg

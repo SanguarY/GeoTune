@@ -5,14 +5,20 @@
 {% block content %}
 <div class="jumbotron p-5 mb-4 bg-light rounded-3">
     <div class="container py-5">
-        <h1 class="display-5 fw-bold">Willkommen bei GeoTune!</h1>
-        <p class="col-md-8 fs-4">Entdecke Musik auf eine völlig neue Art. Finde Playlists in deiner Nähe, teile deine Lieblingslieder und triff Gleichgesinnte.</p>
-        <a class="btn btn-primary btn-lg" href="{% url 'playlists_in_der_naehe' %}">
-            <i class="fas fa-map-marker-alt"></i> Playlists in der Nähe finden
-        </a>
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-5 fw-bold">Willkommen bei GeoTune!</h1>
+                <p class="col-md-12 fs-4">Entdecke Musik auf eine völlig neue Art. Finde Playlists in deiner Nähe, teile deine Lieblingslieder und triff Gleichgesinnte.</p>
+                <a class="btn btn-primary btn-lg mt-3" href="{% url 'playlists_in_der_naehe' %}">
+                    <i class="fas fa-map-marker-alt"></i> Playlists in der Nähe finden
+                </a>
+            </div>
+            <div class="col-md-4 text-center">
+                {% load static %}
+                <img src="{% static 'media/GeoTune_Logo.jpg' %}" alt="GeoTune Logo" class="logo-lg img-fluid">
+            </div>
+        </div>
     </div>
-    {% load static %}
-    <img src="{% static 'media/GeoTune_Logo.jpg' %}" alt="GeoTune Logo" class="jumbotron-logo">
 </div>
 
 <div class="container">

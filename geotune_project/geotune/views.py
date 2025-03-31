@@ -279,21 +279,34 @@ def suche_detail(request, suche_id):
     suche = get_object_or_404(Suche, id=suche_id)
     
     # Playlists dieser Suche abrufen
-    suche_playlists = SuchePlaylist.objects.filter( # type: ignore
+    suche_playlists = SuchePlaylist.objects.filter(
         suche=suche
     ).select_related('playlist').order_by('reihenfolge_nummer')
     
     # Teilnahme des aktuellen Nutzers
-    teilnahme, created = NutzerSucheTeilnahme.objects.get_or_create( # type: ignore
+    teilnahme, created = NutzerSucheTeilnahme.objects.get_or_create(
         nutzer=request.user,
         suche=suche,
         defaults={'beitrittsdatum': timezone.now()}
     )
     
+    # Teilnahmen aller Teilnehmer abrufen
+    teilnehmer_infos = []
+    for tn in suche.teilnehmer.all():
+        try:
+            tn_teilnahme = NutzerSucheTeilnahme.objects.filter(nutzer=tn, suche=suche).first()
+            teilnehmer_infos.append({
+                'nutzer': tn,
+                'teilnahme': tn_teilnahme
+            })
+        except:
+            pass
+    
     return render(request, 'geotune/suche_detail.html', {
         'suche': suche,
         'suche_playlists': suche_playlists,
-        'teilnahme': teilnahme
+        'teilnahme': teilnahme,
+        'teilnehmer_infos': teilnehmer_infos
     })
 
 @login_required
