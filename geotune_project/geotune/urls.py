@@ -34,6 +34,9 @@ urlpatterns = [
     path('playlist/<int:playlist_id>/standort-hinzufuegen/', views.playlist_standort_hinzufuegen, name='playlist_standort_hinzufuegen'),
     path('playlist/<int:playlist_id>/kommentar-hinzufuegen/', views.kommentar_hinzufuegen, name='kommentar_hinzufuegen'),
     path('playlist/<int:playlist_id>/toggle-favorite/', views.playlist_toggle_favorite, name='playlist_toggle_favorite'),
+    path('playlist/<int:playlist_id>/bearbeiten/', views.playlist_bearbeiten, name='playlist_bearbeiten'),
+    path('playlist/<int:playlist_id>/lied/<int:lied_id>/bearbeiten/', views.lied_bearbeiten, name='lied_bearbeiten'),
+    path('playlist/<int:playlist_id>/lied/<int:lied_id>/loeschen/', views.lied_loeschen, name='lied_loeschen'),
     path('playlists/in-der-naehe/', views.playlists_in_der_naehe, name='playlists_in_der_naehe'),
     
     # Suchen (Playlist-Hunts)

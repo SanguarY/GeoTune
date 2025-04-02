@@ -1,7 +1,20 @@
 {% extends 'geotune/base.html' %}
 {% load custom_filters %}
+{% load static %}
 
 {% block title %}{{ playlist.name }} - GeoTune{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'geotune/css/playlist_detail.css' %}">
+<!-- Leaflet JS explizit laden -->
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+  // Global variables for JavaScript
+  window.csrfToken = "{{ csrf_token }}";
+  window.toggleFavoriteUrl = "{% url 'playlist_toggle_favorite' playlist.id %}";
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="playlist-container">
@@ -47,28 +60,32 @@
                 {% endif %}
                 
                 {% if playlist.genres.all %}
-            <div class="playlist-genres">
+            <div class="playlist-genres mb-4">
                     {% for genre in playlist.genres.all %}
                 <span class="genre-tag">{{ genre.name }}</span>
                     {% endfor %}
                 </div>
                 {% endif %}
             
-            <div class="playlist-actions">
+            <div class="hero-actions d-flex align-items-center">
                     {% if playlist.erstellt_von == user %}
-                <a href="{% url 'playlist_standort_hinzufuegen' playlist.id %}" class="btn-hero primary">
+                <a href="{% url 'playlist_standort_hinzufuegen' playlist.id %}" class="btn-hero primary me-3" style="margin-right: 12px;">
                     <i class="fas fa-map-marker-alt"></i> Standort hinzufügen
                     </a>
-                <a href="#" class="btn-hero edit">
+                <a href="{% url 'playlist_bearbeiten' playlist.id %}" class="btn-hero edit me-3" style="margin-right: 12px;">
                     <i class="fas fa-edit"></i> Bearbeiten
                     </a>
                     {% endif %}
                     
-                <button id="favorite-btn" class="btn-hero accent">
-                    <i class="fas fa-star"></i>
+                <!-- Favorite Button -->
+                <form id="favorite-form" action="{% url 'playlist_toggle_favorite' playlist.id %}" method="post">
+                    {% csrf_token %}
+                    <button id="favorite-btn" type="submit" class="btn-hero accent">
+                        <i class="fas fa-star"></i> 
                         {% if ist_favorit %}Favorisiert{% else %}Favorisieren{% endif %}
                     </button>
-                </div>
+                </form>
+            </div>
             </div>
     </section>
 
@@ -79,7 +96,7 @@
             <!-- Songs Section -->
             <div class="content-section">
                 <div class="section-header">
-                    <div class="section-title">
+                    <div class="section-title" style="margin-bottom: 0rem;">
                         <i class="fas fa-music"></i>
                         <h2>Lieder</h2>
                     </div>
@@ -137,6 +154,17 @@
                         <div class="song-duration">
                             {{ playlist_lied.lied.dauer|intdiv:60 }}:{{ playlist_lied.lied.dauer|modulo:60|stringformat:"02d" }}
                         </div>
+                        
+                        {% if playlist.erstellt_von == user %}
+                        <div class="song-actions">
+                            <button type="button" class="btn-icon edit-song" data-lied-id="{{ playlist_lied.lied.id }}" title="Lied bearbeiten">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn-icon delete-song" data-lied-id="{{ playlist_lied.lied.id }}" title="Lied löschen">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
                             {% endfor %}
                 </div>
@@ -160,7 +188,7 @@
         <!-- Comments Section -->
             <div class="content-section">
                 <div class="section-header">
-                    <div class="section-title">
+                    <div class="section-title" style="margin-bottom: 0rem;">
                         <i class="fas fa-comments"></i>
                         <h2>Kommentare</h2>
             </div>
@@ -232,23 +260,111 @@
             <!-- Locations Section -->
             <div class="sidebar-section">
                 <div class="section-header">
-                    <div class="section-title">
+                    <div class="section-title" style="margin-bottom: 0rem;">
                         <i class="fas fa-map-marker-alt"></i>
                         <h2>Standorte</h2>
-            </div>
-                    
-                    {% if playlist.erstellt_von == user and standorte %}
-                    <a href="{% url 'playlist_standort_hinzufuegen' playlist.id %}" class="btn-outline-primary">
-                        <i class="fas fa-map-marker-alt"></i> Standort hinzufügen
-                    </a>
-                    {% endif %}
+                    </div>
                 </div>
                 
                 {% if standorte %}
-                <div class="map-container">
-                    <div id="playlist-map"></div>
-                    </div>
+                <div class="map-container" style="height: 400px; width: 100%; margin-bottom: 20px; position: relative; z-index: 1;">
+                    <div id="playlist-map" style="height: 100%; width: 100%; border-radius: 8px; overflow: hidden;"></div>
+                </div>
+
+                <!-- Leaflet JS -->
+                <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+                <!-- Map Initialization Script -->
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    console.log('Initializing map on DOMContentLoaded');
                     
+                    // Prüfen, ob Leaflet geladen ist
+                    if (typeof L === 'undefined') {
+                        console.error('Leaflet not loaded');
+                        return;
+                    }
+                    
+                    // Map-Element prüfen
+                    const mapElement = document.getElementById('playlist-map');
+                    if (!mapElement) {
+                        console.error('Map element not found');
+                        return;
+                    }
+                    
+                    try {
+                        // Standorte direkt aus Template-Daten laden
+                        const locations = [
+                            {% for ps in standorte %}
+                            {
+                                lat: {{ ps.standort.breitengrad|stringformat:"f"|cut:"," }},
+                                lng: {{ ps.standort.laengengrad|stringformat:"f"|cut:"," }},
+                                name: "{% if ps.standort.stadt or ps.standort.land %}{{ ps.standort.stadt }}{% if ps.standort.stadt and ps.standort.land %}, {% endif %}{{ ps.standort.land }}{% else %}Standort{% endif %}",
+                                address: "{{ ps.standort.adresse|default:'' }}",
+                                description: "{{ ps.standort.beschreibung|default:'' }}"
+                            }{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        ];
+                        
+                        if (locations.length === 0) {
+                            console.warn('No locations available');
+                            return;
+                        }
+                        
+                        // Map initialisieren
+                        const map = L.map(mapElement).setView([locations[0].lat, locations[0].lng], 13);
+                        
+                        // Tile Layer hinzufügen
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                            maxZoom: 19
+                        }).addTo(map);
+                        
+                        // Marker hinzufügen
+                        const bounds = L.latLngBounds();
+                        
+                        locations.forEach(function(location) {
+                            bounds.extend([location.lat, location.lng]);
+                            
+                            // Marker erstellen
+                            const marker = L.marker([location.lat, location.lng]).addTo(map);
+                            
+                            // Popup erstellen
+                            let popupContent = '<div class="map-popup">';
+                            popupContent += '<h3>' + location.name + '</h3>';
+                            
+                            if (location.address) {
+                                popupContent += '<p>' + location.address + '</p>';
+                            }
+                            
+                            if (location.description) {
+                                popupContent += '<p class="popup-description">' + location.description + '</p>';
+                            }
+                            
+                            popupContent += '<p class="popup-coords">' + location.lat.toFixed(6) + ', ' + location.lng.toFixed(6) + '</p>';
+                            popupContent += '</div>';
+                            
+                            marker.bindPopup(popupContent);
+                        });
+                        
+                        // Map an alle Marker anpassen
+                        if (locations.length > 1) {
+                            map.fitBounds(bounds, {
+                                padding: [30, 30]
+                            });
+                        }
+                        
+                        // Nach einer kurzen Verzögerung die Map aktualisieren
+                        setTimeout(function() {
+                            map.invalidateSize(true);
+                        }, 300);
+                        
+                    } catch (error) {
+                        console.error('Map initialization error:', error);
+                    }
+                });
+                </script>
+                
                 <div class="location-list">
                         {% for ps in standorte %}
                         <div class="location-item">
@@ -266,7 +382,7 @@
                             </div>
                                     
                                     {% if ps.standort.adresse %}
-                            <div class="location-address">{{ ps.standort.adresse }}</div>
+                                    <div class="location-address">{{ ps.standort.adresse }}</div>
                                     {% endif %}
                                     
                             <div class="location-coordinates">
@@ -274,9 +390,9 @@
                             </div>
                                     
                                     {% if ps.standort.beschreibung %}
-                            <div class="location-description">
-                                "{{ ps.standort.beschreibung }}"
-                            </div>
+                                    <div class="location-description">
+                                        "{{ ps.standort.beschreibung }}"
+                                    </div>
                                     {% endif %}
                                 </div>
                         
@@ -309,12 +425,12 @@
                 {% endif %}
         </div>
         
-            <!-- Similar Playlists Section -->
-            <div class="sidebar-section">
-                <div class="section-header">
-                    <div class="section-title">
-                        <i class="fas fa-list-music"></i>
-                        <h2>Ähnliche Playlists</h2>
+        <!-- Similar Playlists Section -->
+        <div class="sidebar-section">
+            <div class="section-header">
+                <div class="section-title" style="margin-bottom: 0rem;">
+                    <i class="fas fa-list-music"></i>
+                    <h2>Ähnliche Playlists</h2>
             </div>
                 </div>
                 
@@ -365,7 +481,7 @@
                 <h5 class="modal-title" id="addSongModalLabel">Lied zur Playlist hinzufügen</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
             </div>
-            <form method="post">
+            <form method="post" id="add-song-form">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="form-floating mb-3">
@@ -408,11 +524,104 @@
                     <button type="button" class="btn-hero edit" data-bs-dismiss="modal">
                         <i class="fas fa-times"></i> Abbrechen
                     </button>
-                    <button type="submit" class="btn-hero accent">
+                    <button type="submit" class="btn-hero accent" id="add-song-btn">
                         <i class="fas fa-plus"></i> Lied hinzufügen
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Song Modal -->
+<div class="modal fade" id="editSongModal" tabindex="-1" aria-labelledby="editSongModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSongModalLabel">Lied bearbeiten</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <form method="post" id="edit-song-form">
+                {% csrf_token %}
+                <input type="hidden" id="edit-lied-id" name="lied_id">
+                <div class="modal-body">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="edit-titel" name="titel" placeholder="Titel" required>
+                        <label for="edit-titel">Titel</label>
+                    </div>
+                    
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="edit-kuenstler" name="kuenstler" placeholder="Künstler" required>
+                        <label for="edit-kuenstler">Künstler</label>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="edit-album" name="album" placeholder="Album">
+                                <label for="edit-album">Album</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="edit-dauer-format" name="dauer_format" placeholder="Dauer (MM:SS)" required pattern="^([0-9]{1,2}):([0-5][0-9])$">
+                                <input type="hidden" name="dauer" id="edit-dauer-sekunden">
+                                <label for="edit-dauer-format">Dauer (MM:SS)</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-floating mb-3">
+                        <input type="url" class="form-control" id="edit-externe-url" name="externe_url" placeholder="Externe URL">
+                        <label for="edit-externe-url">Externe URL</label>
+                    </div>
+                    
+                    <div class="form-floating mb-3">
+                        <input type="url" class="form-control" id="edit-cover-bild" name="cover_bild" placeholder="Cover Bild URL">
+                        <label for="edit-cover-bild">Cover Bild URL</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-hero edit" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Abbrechen
+                    </button>
+                    <button type="submit" class="btn-hero accent" id="edit-song-btn">
+                        <i class="fas fa-save"></i> Änderungen speichern
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Song Confirmation Modal -->
+<div class="modal fade" id="deleteSongModal" tabindex="-1" aria-labelledby="deleteSongModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteSongModalLabel">Lied löschen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="modal-icon-container me-3">
+                        <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
+                    </div>
+                    <div>
+                        <p class="mb-1">Möchtest du dieses Lied wirklich aus der Playlist entfernen?</p>
+                        <p class="song-title-display text-dark fw-bold mb-0"></p>
+                    </div>
+                </div>
+                <p class="text-muted small">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-hero edit" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Abbrechen
+                </button>
+                <button type="button" class="btn-hero danger bg-danger text-white" id="confirm-delete-btn" style="background-color: #dc3545 !important; color: white !important;">
+                    <i class="fas fa-trash-alt"></i> Lied löschen
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -422,19 +631,6 @@
 {% block extra_js %}
 <!-- First, define locations data so it's accessible to our scripts -->
 <script>
-    // Define locations data from Django template
-    window.playlistLocations = [
-        {% for ps in standorte %}
-        {
-            lat: {{ ps.standort.breitengrad }},
-            lng: {{ ps.standort.laengengrad }},
-            name: "{% if ps.standort.stadt or ps.standort.land %}{{ ps.standort.stadt }}{% if ps.standort.stadt and ps.standort.land %}, {% endif %}{{ ps.standort.land }}{% else %}Standort{% endif %}",
-            address: "{{ ps.standort.adresse|escapejs|default:'' }}",
-            description: "{{ ps.standort.beschreibung|escapejs|default:'' }}"
-        }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ];
-    
     // Define CSRF token for AJAX requests
     window.csrfToken = "{{ csrf_token }}";
     window.playlistId = "{{ playlist.id }}";
@@ -454,16 +650,46 @@
 <!-- Main JavaScript -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize components
-        initFavoriteButton();
-        initMap();
-        initCommentForm();
-        initSongDurationInput();
+        // Debug log to check if variables are properly set
+        console.log('Debug - Window Variables:', {
+            csrfToken: window.csrfToken,
+            playlistId: window.playlistId,
+            toggleFavoriteUrl: window.toggleFavoriteUrl
+        });
+        
+        try {
+            // Initialize components that exist
+            if (typeof initSongDurationInput === 'function') {
+                initSongDurationInput();
+            }
+            if (typeof initFavoriteButton === 'function') {
+                initFavoriteButton();
+            }
+            if (typeof initCommentForm === 'function') {
+                initCommentForm();
+            }
+            if (typeof initAddSongForm === 'function') {
+                initAddSongForm();
+            }
+            if (typeof initEditSongButtons === 'function') {
+                initEditSongButtons();
+            }
+            if (typeof initDeleteSongButtons === 'function') {
+                initDeleteSongButtons();
+            }
+        } catch (error) {
+            console.error('Error initializing page components:', error);
+        }
     });
+    
+    // Global initialization checks
+    function elementExists(id) {
+        return document.getElementById(id) !== null;
+    }
     
     // Funktion zur Initialisierung des Dauer-Input-Feldes
     function initSongDurationInput() {
-        const songForm = document.querySelector('#addSongModal form');
+        const songForm = document.getElementById('add-song-form');
         if (!songForm) return;
         
         const durationFormat = songForm.querySelector('input[name="dauer_format"]');
@@ -471,50 +697,77 @@
         
         if (!durationFormat || !durationSeconds) return;
         
-        // Beim Absenden des Formulars MM:SS in Sekunden umwandeln
-        songForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const durationPattern = /^([0-9]{1,2}):([0-5][0-9])$/;
-            const durationValue = durationFormat.value.trim();
-            
-            if (durationPattern.test(durationValue)) {
-                const [minutes, seconds] = durationValue.split(':').map(Number);
-                const totalSeconds = (minutes * 60) + seconds;
-                durationSeconds.value = totalSeconds;
-                
-                // Formular absenden
-                this.submit();
-            } else {
-                // Fehler anzeigen
-                durationFormat.setCustomValidity('Bitte gib die Dauer im Format MM:SS ein (z.B. 3:45)');
-                durationFormat.reportValidity();
-            }
-        });
-        
         // Bei Änderungen im Feld die Validierung zurücksetzen
         durationFormat.addEventListener('input', function() {
             this.setCustomValidity('');
         });
+        
+        // Gleiche Logik für das Edit-Formular
+        const editSongForm = document.getElementById('edit-song-form');
+        if (!editSongForm) return;
+        
+        const editDurationFormat = editSongForm.querySelector('input[name="dauer_format"]');
+        const editDurationSeconds = editSongForm.querySelector('#edit-dauer-sekunden');
+        
+        if (!editDurationFormat || !editDurationSeconds) return;
+        
+        // Bei Änderungen im Feld die Validierung zurücksetzen
+        editDurationFormat.addEventListener('input', function() {
+            this.setCustomValidity('');
+        });
     }
     
-    // Initialize favorite button functionality
-    function initFavoriteButton() {
-        const favoriteBtn = document.getElementById('favorite-btn');
-        if (!favoriteBtn) return;
+    // Initialize song form with AJAX submission
+    function initAddSongForm() {
+        const songForm = document.getElementById('add-song-form');
+        const songList = document.querySelector('.content-section:first-child .song-list');
+        const emptyState = document.querySelector('.content-section:first-child .empty-state');
+        const songCount = document.querySelector('.playlist-meta-item .fa-music').parentNode.querySelector('span');
+        const addSongModal = document.getElementById('addSongModal');
         
-        favoriteBtn.addEventListener('click', function() {
-            // Show loading state
-            const originalContent = favoriteBtn.innerHTML;
-            favoriteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            favoriteBtn.disabled = true;
+        if (!songForm) return;
+        
+        songForm.addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            // Send request to toggle favorite status
-            fetch(window.toggleFavoriteUrl, {
+            // Dauer validieren und umwandeln
+            const durationFormat = songForm.querySelector('input[name="dauer_format"]');
+            const durationSeconds = songForm.querySelector('#dauer_sekunden');
+            const durationPattern = /^([0-9]{1,2}):([0-5][0-9])$/;
+            const durationValue = durationFormat.value.trim();
+            
+            if (!durationPattern.test(durationValue)) {
+                durationFormat.setCustomValidity('Bitte gib die Dauer im Format MM:SS ein (z.B. 3:45)');
+                durationFormat.reportValidity();
+                return;
+            }
+            
+            // MM:SS in Sekunden umwandeln
+            const [minutes, seconds] = durationValue.split(':').map(Number);
+            const totalSeconds = (minutes * 60) + seconds;
+            durationSeconds.value = totalSeconds;
+            
+            // Formular auf allgemeine Gültigkeit prüfen
+            if (!songForm.checkValidity()) {
+                songForm.reportValidity();
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = document.getElementById('add-song-btn');
+            const originalBtnContent = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            submitBtn.disabled = true;
+            
+            // Get form data
+            const formData = new FormData(songForm);
+            
+            // Send AJAX request
+            fetch('', {
                 method: 'POST',
+                body: formData,
                 headers: {
-                    'X-CSRFToken': window.csrfToken,
-                    'Content-Type': 'application/json'
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 credentials: 'same-origin'
             })
@@ -526,202 +779,461 @@
             })
             .then(data => {
                 if (data.success) {
-                    updateFavoriteButton(favoriteBtn, data.is_favorite);
+                    // Create song item HTML with proper formatting
+                    const songNumber = songList ? songList.querySelectorAll('.song-item').length + 1 : 1;
+                    const minutes = Math.floor(data.lied.dauer / 60);
+                    const seconds = data.lied.dauer % 60;
+                    const formattedDuration = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                    
+                    // Create new song element
+                    const newSong = document.createElement('div');
+                    newSong.className = 'song-item';
+                    
+                    // Build song item HTML
+                    let songHtml = '<div class="song-number">' + songNumber + '</div>';
+                    songHtml += '<div class="song-cover">';
+                    
+                    if (data.lied.cover_bild) {
+                        songHtml += '<img src="' + data.lied.cover_bild + '" alt="Cover von ' + data.lied.titel + '">';
+                    } else {
+                        songHtml += '<div class="song-cover-placeholder"><i class="fas fa-music"></i></div>';
+                    }
+                    
+                    songHtml += '</div>';
+                    songHtml += '<div class="song-info">';
+                    songHtml += '<div class="song-title">';
+                    
+                    if (data.lied.externe_url) {
+                        songHtml += '<a href="' + data.lied.externe_url + '" target="_blank" rel="noopener">';
+                        songHtml += data.lied.titel;
+                        songHtml += '<i class="fas fa-external-link-alt"></i>';
+                        songHtml += '</a>';
+                    } else {
+                        songHtml += data.lied.titel;
+                    }
+                    
+                    songHtml += '</div>';
+                    songHtml += '<div class="song-details">';
+                    songHtml += '<span class="song-artist">' + data.lied.kuenstler + '</span>';
+                    
+                    if (data.lied.album) {
+                        songHtml += '<span class="song-album d-none d-md-inline">' + data.lied.album + '</span>';
+                    }
+                    
+                    songHtml += '<span class="song-added-by d-none d-md-inline">';
+                    songHtml += 'Hinzugefügt von <a href="' + window.userProfileUrl + '">' + window.username + '</a>';
+                    songHtml += '</span>';
+                    songHtml += '</div>';
+                    songHtml += '</div>';
+                    songHtml += '<div class="song-duration">' + formattedDuration + '</div>';
+                    
+                    newSong.innerHTML = songHtml;
+                    
+                    // If empty state exists, replace it with song list
+                    if (emptyState) {
+                        // Get the songs section container
+                        const songsSectionContainer = document.querySelector('.content-section:first-child');
+                        
+                        // Create new song list
+                        const newSongList = document.createElement('div');
+                        newSongList.className = 'song-list';
+                        newSongList.appendChild(newSong);
+                        
+                        // Replace empty state with song list
+                        songsSectionContainer.removeChild(emptyState);
+                        songsSectionContainer.appendChild(newSongList);
+                    } else if (songList) {
+                        // Add to existing song list
+                        songList.appendChild(newSong);
+                    }
+                    
+                    // Update song count in meta information
+                    if (songCount) {
+                        const currentCount = parseInt(songCount.textContent.split(' ')[0]) || 0;
+                        songCount.textContent = (currentCount + 1) + ' Lieder';
+                    }
+                    
+                    // Close the modal
+                    const bsModal = bootstrap.Modal.getInstance(addSongModal);
+                    bsModal.hide();
+                    
+                    // Reset form
+                    songForm.reset();
+                    
+                    // Show success message
+                    showToast('Lied erfolgreich hinzugefügt!');
                 } else {
-                    // Restore original state if server indicates failure
-                    favoriteBtn.innerHTML = originalContent;
-                    favoriteBtn.disabled = false;
-                    showToast('Fehler beim Aktualisieren des Favoriten-Status');
+                    showToast(data.error || 'Fehler beim Hinzufügen des Liedes.');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                // Restore original state on error
-                favoriteBtn.innerHTML = originalContent;
-                favoriteBtn.disabled = false;
                 showToast('Fehler bei der Verbindung zum Server');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalBtnContent;
+                submitBtn.disabled = false;
             });
+        });
+        
+        // Event-Listener für Modal-Events hinzufügen
+        addSongModal.addEventListener('hidden.bs.modal', function () {
+            // Form zurücksetzen wenn Modal geschlossen wird
+            songForm.reset();
+        });
+        
+        // Sicherstellen, dass das Modal nach dem Schließen wieder richtig funktioniert
+        addSongModal.addEventListener('hidden.bs.modal', function () {
+            setTimeout(() => {
+                // Eventuelle Dead-Listeners entfernen
+                const oldInstance = bootstrap.Modal.getInstance(addSongModal);
+                if (oldInstance) {
+                    oldInstance.dispose();
+                }
+            }, 100);
         });
     }
     
-    // Update favorite button based on state
-    function updateFavoriteButton(button, isFavorite) {
-        button.disabled = false;
+    // Initialize edit song buttons and form with AJAX submission
+    function initEditSongButtons() {
+        const songItems = document.querySelectorAll('.song-item');
+        const editSongModal = document.getElementById('editSongModal');
+        const editSongForm = document.getElementById('edit-song-form');
         
-        // Immer gelb, nur Text ändert sich
-        if (isFavorite) {
-            button.innerHTML = '<i class="fas fa-star"></i> Favorisiert';
-        } else {
-            button.innerHTML = '<i class="fas fa-star"></i> Favorisieren';
-        }
+        if (!songItems.length || !editSongModal || !editSongForm) return;
         
-        // Optional: Show success toast
-        showToast(isFavorite ? 'Zur Favoritenliste hinzugefügt' : 'Aus Favoritenliste entfernt');
-    }
-    
-    // Show toast notification
-    function showToast(message) {
-        // Check if Bootstrap toast is available
-        if (typeof bootstrap !== 'undefined') {
-            // Create toast element
-            const toastEl = document.createElement('div');
-            toastEl.className = 'toast align-items-center';
-            toastEl.setAttribute('role', 'alert');
-            toastEl.setAttribute('aria-live', 'assertive');
-            toastEl.setAttribute('aria-atomic', 'true');
-            
-            toastEl.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body">
-                        ${message}
-                    </div>
-                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            `;
-            
-            // Add to container or body
-            let toastContainer = document.querySelector('.toast-container');
-            if (!toastContainer) {
-                toastContainer = document.createElement('div');
-                toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-                document.body.appendChild(toastContainer);
-            }
-            
-            toastContainer.appendChild(toastEl);
-            
-            // Show toast
-            const toast = new bootstrap.Toast(toastEl);
-            toast.show();
-            
-            // Remove after hiding
-            toastEl.addEventListener('hidden.bs.toast', function() {
-                toastEl.remove();
-            });
-        } else {
-            // Fallback if Bootstrap is not available
-            console.log('Toast message:', message);
-        }
-    }
-    
-    // Initialize map
-    function initMap() {
-        const mapElement = document.getElementById('playlist-map');
-        if (!mapElement) return;
+        const editButtons = document.querySelectorAll('.edit-song');
         
-        // Get locations from the window object
-        const locations = window.playlistLocations || [];
-        if (locations.length === 0) return;
-        
-        try {
-            // Initialize Leaflet map
-            const map = L.map(mapElement).setView([locations[0].lat, locations[0].lng], 13);
-            
-            // Add tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
-            }).addTo(map);
-        
-            // Add markers and bounds
-            const bounds = L.latLngBounds();
-            
-            locations.forEach(location => {
-                // Add location to bounds
-                bounds.extend([location.lat, location.lng]);
+        // Event-Listener für Edit-Buttons
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const liedId = this.getAttribute('data-lied-id');
                 
-                // Create custom marker
-                const marker = L.marker([location.lat, location.lng], {
-                    icon: L.divIcon({
-                        className: 'custom-map-marker',
-                        html: '<div class="marker-pin"></div>',
-                        iconSize: [30, 42],
-                        iconAnchor: [15, 42]
-                    })
-                }).addTo(map);
+                // Visual feedback when button is clicked
+                this.classList.add('active');
+                const originalContent = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 
-                // Create popup
-                let popupContent = '<div class="map-popup">';
-                popupContent += '<h3>' + location.name + '</h3>';
-                
-                if (location.address) {
-                    popupContent += '<p>' + location.address + '</p>';
-                }
-                
-                if (location.description) {
-                    popupContent += '<p class="popup-description">' + location.description + '</p>';
-                }
-                
-                popupContent += '<p class="popup-coords">' + location.lat.toFixed(6) + ', ' + location.lng.toFixed(6) + '</p>';
-                popupContent += '</div>';
-                
-                marker.bindPopup(popupContent);
-            });
-            
-            // Fit map to bounds if multiple locations
-            if (locations.length > 1) {
-                map.fitBounds(bounds, {
-                    padding: [30, 30]
+                // Lied-Daten per AJAX laden
+                fetch(`/playlist/${window.playlistId}/lied/${liedId}/bearbeiten/`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Restore button state
+                    this.innerHTML = originalContent;
+                    this.classList.remove('active');
+                    
+                    if (data.success) {
+                        // Formular mit den Lieddaten befüllen
+                        document.getElementById('edit-lied-id').value = data.lied.id;
+                        document.getElementById('edit-titel').value = data.lied.titel;
+                        document.getElementById('edit-kuenstler').value = data.lied.kuenstler;
+                        document.getElementById('edit-album').value = data.lied.album || '';
+                        document.getElementById('edit-dauer-format').value = data.lied.dauer_format;
+                        document.getElementById('edit-dauer-sekunden').value = data.lied.dauer;
+                        document.getElementById('edit-externe-url').value = data.lied.externe_url || '';
+                        document.getElementById('edit-cover-bild').value = data.lied.cover_bild || '';
+                        
+                        // Modal öffnen
+                        const bsModal = new bootstrap.Modal(editSongModal);
+                        bsModal.show();
+                    } else {
+                        showToast(data.error || 'Fehler beim Laden der Lieddaten');
+                    }
+                })
+                .catch(error => {
+                    // Restore button state on error
+                    this.innerHTML = originalContent;
+                    this.classList.remove('active');
+                    
+                    console.error('Error:', error);
+                    showToast('Fehler bei der Verbindung zum Server');
                 });
+            });
+        });
+        
+        // Event-Listener für das Formular
+        editSongForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Lied-ID aus dem versteckten Feld holen
+            const liedId = document.getElementById('edit-lied-id').value;
+            
+            // Dauer validieren und umwandeln
+            const durationFormat = document.getElementById('edit-dauer-format');
+            const durationSeconds = document.getElementById('edit-dauer-sekunden');
+            const durationPattern = /^([0-9]{1,2}):([0-5][0-9])$/;
+            const durationValue = durationFormat.value.trim();
+            
+            if (!durationPattern.test(durationValue)) {
+                durationFormat.setCustomValidity('Bitte gib die Dauer im Format MM:SS ein (z.B. 3:45)');
+                durationFormat.reportValidity();
+                return;
             }
             
-            // Add map styling
-            addMapStyles();
-        } catch (error) {
-            console.error('Error initializing map:', error);
-            mapElement.innerHTML = '<div class="map-error"><p>Fehler beim Laden der Karte</p></div>';
+            // MM:SS in Sekunden umwandeln
+            const [minutes, seconds] = durationValue.split(':').map(Number);
+            const totalSeconds = (minutes * 60) + seconds;
+            durationSeconds.value = totalSeconds;
+            
+            // Formular auf allgemeine Gültigkeit prüfen
+            if (!editSongForm.checkValidity()) {
+                editSongForm.reportValidity();
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = document.getElementById('edit-song-btn');
+            const originalBtnContent = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            submitBtn.disabled = true;
+            
+            // Get form data
+            const formData = new FormData(editSongForm);
+            
+            // Send AJAX request
+            fetch(`/playlist/${window.playlistId}/lied/${liedId}/bearbeiten/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Aktualisiere das Lied in der Liste
+                    updateSongInList(liedId, data.lied);
+                    
+                    // Close the modal
+                    const bsModal = bootstrap.Modal.getInstance(editSongModal);
+                    bsModal.hide();
+                    
+                    // Reset form
+                    editSongForm.reset();
+                    
+                    // Show success message
+                    showToast(data.message || 'Lied erfolgreich aktualisiert!');
+                } else {
+                    showToast(data.error || 'Fehler beim Aktualisieren des Liedes.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Fehler bei der Verbindung zum Server');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalBtnContent;
+                submitBtn.disabled = false;
+            });
+        });
+        
+        // Event-Listener für Modal-Events hinzufügen
+        editSongModal.addEventListener('hidden.bs.modal', function () {
+            // Form zurücksetzen wenn Modal geschlossen wird
+            editSongForm.reset();
+        });
+    }
+    
+    // Helper-Funktion zum Aktualisieren eines Liedes in der Liste
+    function updateSongInList(liedId, liedData) {
+        // Finde das Lied-Element in der Liste
+        const songItem = document.querySelector(`.song-item .edit-song[data-lied-id="${liedId}"]`).closest('.song-item');
+        if (!songItem) return;
+        
+        // Aktualisiere die Lieddaten im DOM
+        const titleElement = songItem.querySelector('.song-title');
+        const artistElement = songItem.querySelector('.song-artist');
+        const albumElement = songItem.querySelector('.song-album');
+        const durationElement = songItem.querySelector('.song-duration');
+        
+        if (titleElement) {
+            if (liedData.externe_url) {
+                titleElement.innerHTML = `<a href="${liedData.externe_url}" target="_blank" rel="noopener">${liedData.titel}<i class="fas fa-external-link-alt"></i></a>`;
+            } else {
+                titleElement.textContent = liedData.titel;
+            }
+        }
+        
+        if (artistElement) {
+            artistElement.textContent = liedData.kuenstler;
+        }
+        
+        if (albumElement && liedData.album) {
+            albumElement.textContent = liedData.album;
+        }
+        
+        if (durationElement) {
+            const minutes = Math.floor(liedData.dauer / 60);
+            const seconds = liedData.dauer % 60;
+            durationElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+        
+        // Aktualisiere Cover-Bild, falls vorhanden
+        const coverElement = songItem.querySelector('.song-cover');
+        if (coverElement) {
+            if (liedData.cover_bild) {
+                coverElement.innerHTML = `<img src="${liedData.cover_bild}" alt="Cover von ${liedData.titel}">`;
+            } else {
+                coverElement.innerHTML = '<div class="song-cover-placeholder"><i class="fas fa-music"></i></div>';
+            }
         }
     }
     
-    // Add map custom styling
-    function addMapStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
-            .custom-map-marker {
-                background: transparent;
-            }
-            .marker-pin {
-                width: 24px;
-                height: 24px;
-                border-radius: 50% 50% 50% 0;
-                background: var(--primary);
-                position: absolute;
-                transform: rotate(-45deg);
-                left: 50%;
-                top: 50%;
-                margin: -20px 0 0 -12px;
-                box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-            }
-            .marker-pin::after {
-                content: '';
-                width: 14px;
-                height: 14px;
-                margin: 5px 0 0 5px;
-                background: white;
-                position: absolute;
-                border-radius: 50%;
-            }
-            .map-popup {
-                text-align: center;
-            }
-            .map-popup h3 {
-                font-size: 1rem;
-                font-weight: 600;
-                margin: 0 0 5px 0;
-            }
-            .map-popup p {
-                margin: 5px 0;
-                font-size: 0.85rem;
-            }
-            .popup-description {
-                font-style: italic;
-                color: #6c757d;
-            }
-            .popup-coords {
-                font-family: monospace;
-                font-size: 0.75rem;
-                color: #6c757d;
-            }
-        `;
-        document.head.appendChild(style);
+    // Initialize delete song buttons with confirmation and AJAX
+    function initDeleteSongButtons() {
+        const deleteButtons = document.querySelectorAll('.delete-song');
+        const deleteModal = document.getElementById('deleteSongModal');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        
+        if (!deleteButtons.length || !deleteModal || !confirmDeleteBtn) return;
+        
+        // Initialize the Bootstrap modal
+        const bsDeleteModal = new bootstrap.Modal(deleteModal);
+        
+        // Event handler for delete buttons
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const liedId = this.getAttribute('data-lied-id');
+                const songItem = this.closest('.song-item');
+                const songTitle = songItem.querySelector('.song-title').textContent.trim();
+                
+                // Set the song title in the modal
+                deleteModal.querySelector('.song-title-display').textContent = songTitle;
+                
+                // Store the liedId and button reference on the modal for later use
+                deleteModal.setAttribute('data-lied-id', liedId);
+                deleteModal.setAttribute('data-button-id', this.getAttribute('data-lied-id'));
+                
+                // Show the modal
+                bsDeleteModal.show();
+            });
+        });
+        
+        // Event handler for the confirm delete button
+        confirmDeleteBtn.addEventListener('click', function() {
+            // Get the stored liedId and find the original button
+            const liedId = deleteModal.getAttribute('data-lied-id');
+            const originalButton = document.querySelector(`.delete-song[data-lied-id="${liedId}"]`);
+            const songItem = originalButton.closest('.song-item');
+            
+            // Hide the modal
+            bsDeleteModal.hide();
+            
+            // Visual feedback during deletion
+            originalButton.classList.add('active');
+            originalButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            songItem.classList.add('deleting');
+            
+            // FormData mit CSRF-Token erstellen
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', window.csrfToken);
+            
+            // AJAX-Anfrage zum Löschen des Liedes
+            fetch(`/playlist/${window.playlistId}/lied/${liedId}/loeschen/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Smooth fade-out animation
+                    songItem.style.transition = 'all 0.3s ease';
+                    songItem.style.maxHeight = '0';
+                    songItem.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        // Lied aus der Liste entfernen
+                        const songList = document.querySelector('.song-list');
+                        songItem.remove();
+                        
+                        // Überprüfen, ob die Liste jetzt leer ist
+                        if (songList && !songList.querySelector('.song-item')) {
+                            // Leere Liste durch Empty-State ersetzen
+                            const songSection = songList.closest('.content-section');
+                            songList.remove();
+                            
+                            // Empty-State-HTML erstellen
+                            const emptyState = document.createElement('div');
+                            emptyState.className = 'empty-state';
+                            emptyState.innerHTML = `
+                                <div class="empty-state-icon">
+                                    <i class="fas fa-music"></i>
+                                </div>
+                                <h3>Keine Lieder</h3>
+                                <p>Diese Playlist enthält noch keine Lieder.</p>
+                                
+                                <button type="button" class="btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSongModal">
+                                    <i class="fas fa-plus"></i> Erstes Lied hinzufügen
+                                </button>
+                            `;
+                            
+                            songSection.appendChild(emptyState);
+                        } else {
+                            // Song-Nummern aktualisieren
+                            const remainingSongs = document.querySelectorAll('.song-item');
+                            remainingSongs.forEach((song, index) => {
+                                const numberElement = song.querySelector('.song-number');
+                                if (numberElement) {
+                                    numberElement.textContent = (index + 1).toString();
+                                }
+                            });
+                        }
+                        
+                        // Song-Zähler in der Playlist-Meta aktualisieren
+                        const songCount = document.querySelector('.playlist-meta-item .fa-music').parentNode.querySelector('span');
+                        if (songCount) {
+                            const currentCount = parseInt(songCount.textContent.split(' ')[0]) || 0;
+                            songCount.textContent = (currentCount - 1) + ' Lieder';
+                        }
+                    }, 300);
+                    
+                    // Erfolgsmeldung anzeigen
+                    showToast(data.message || 'Lied erfolgreich aus der Playlist entfernt!');
+                } else {
+                    // Restore item state on error
+                    originalButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                    originalButton.classList.remove('active');
+                    songItem.classList.remove('deleting');
+                    showToast(data.error || 'Fehler beim Entfernen des Liedes.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Restore item state on error
+                originalButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                originalButton.classList.remove('active');
+                songItem.classList.remove('deleting');
+                showToast('Fehler bei der Verbindung zum Server');
+            });
+        });
     }
     
     // Initialize comment form with AJAX submission
@@ -813,6 +1325,119 @@
                 // Restore button state
                 submitBtn.innerHTML = originalBtnContent;
                 submitBtn.disabled = false;
+            });
+        });
+    }
+    
+    // Show toast notification
+    function showToast(message) {
+        // Check if Bootstrap toast is available
+        if (typeof bootstrap !== 'undefined') {
+            // Create toast element
+            const toastEl = document.createElement('div');
+            toastEl.className = 'toast align-items-center';
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Add to container or body
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                document.body.appendChild(toastContainer);
+            }
+            
+            toastContainer.appendChild(toastEl);
+            
+            // Show toast
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+            
+            // Remove after hiding
+            toastEl.addEventListener('hidden.bs.toast', function() {
+                toastEl.remove();
+            });
+        } else {
+            // Fallback if Bootstrap is not available
+            console.log('Toast message:', message);
+        }
+    }
+
+    // Funktion zum Initialisieren des Favoriten-Buttons
+    function initFavoriteButton() {
+        const favoriteForm = document.getElementById('favorite-form');
+        const favoriteBtn = document.getElementById('favorite-btn');
+        
+        if (!favoriteForm || !favoriteBtn) return;
+        
+        // Ursprünglichen Zustand speichern
+        const originalState = {
+            isFavorited: favoriteBtn.innerHTML.includes('Favorisiert'),
+            content: favoriteBtn.innerHTML
+        };
+        
+        favoriteForm.addEventListener('submit', function(e) {
+            // Standard-Formular-Absenden verhindern
+            e.preventDefault();
+            
+            // Lade-Status anzeigen
+            favoriteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            favoriteBtn.disabled = true;
+            
+            // FormData-Objekt erstellen
+            const formData = new FormData(favoriteForm);
+            
+            // URL aus dem Formular-Action-Attribut holen
+            const url = favoriteForm.getAttribute('action');
+            
+            // AJAX-Anfrage senden
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: formData
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    // Button-Status aktualisieren
+                    favoriteBtn.disabled = false;
+                    favoriteBtn.innerHTML = data.is_favorite ? 
+                        '<i class="fas fa-star"></i> Favorisiert' : 
+                        '<i class="fas fa-star"></i> Favorisieren';
+                    
+                    // Toast-Nachricht anzeigen
+                    showToast(data.message);
+                } else {
+                    // Ursprünglichen Zustand wiederherstellen
+                    favoriteBtn.innerHTML = originalState.content;
+                    favoriteBtn.disabled = false;
+                    showToast('Fehler beim Aktualisieren des Favoriten-Status');
+                }
+            })
+            .catch(function(error) {
+                console.error('Error:', error);
+                // Ursprünglichen Zustand wiederherstellen
+                favoriteBtn.innerHTML = originalState.content;
+                favoriteBtn.disabled = false;
+                showToast('Fehler bei der Verbindung zum Server');
             });
         });
     }

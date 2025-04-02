@@ -1,89 +1,330 @@
 {% extends 'geotune/base.html' %}
+{% load static %}
 
 {% block title %}Standort hinzufügen - GeoTune{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom card header styles (similar to feature-card-primary) */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Custom alert styles - clean gray style without accents */
+    .alert-custom-info {
+        color: var(--dark);
+        background-color: var(--gray-100);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-custom-info i {
+        color: var(--gray-600);
+        margin-right: 0.5rem;
+    }
+    
+    /* Custom button styles */
+    .btn-primary {
+        background-color: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--border-radius);
+        transition: all 0.2s ease;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-primary:active,
+    .btn-primary:focus:active {
+        background-color: var(--primary) !important; 
+        border-color: var(--primary-dark) !important;
+        transform: translateY(1px);
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .btn-primary:focus,
+    .btn-primary.focus {
+        box-shadow: none !important;
+        border-color: var(--primary) !important;
+    }
+    
+    .btn-primary i {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-secondary {
+        background-color: var(--gray-200);
+        border-color: var(--gray-300);
+        color: var(--dark);
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--border-radius);
+        transition: all 0.2s ease;
+    }
+    
+    .btn-secondary:hover {
+        background-color: var(--gray-300);
+        border-color: var(--gray-400);
+    }
+    
+    .btn-secondary:active,
+    .btn-secondary:focus:active {
+        background-color: var(--gray-300) !important;
+        border-color: var(--gray-400) !important;
+        transform: translateY(1px);
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .btn-secondary:focus,
+    .btn-secondary.focus {
+        box-shadow: none !important;
+        border-color: var(--gray-300) !important;
+    }
+    
+    .btn-secondary i {
+        margin-right: 0.5rem;
+    }
+    
+    /* Override Bootstrap's default focus styles for all buttons */
+    .btn:focus, 
+    .btn.focus, 
+    .btn:active:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Form styling */
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+    }
+    
+    .form-control {
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        padding: 0.75rem;
+        transition: border-color 0.2s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+    }
+    
+    textarea.form-control {
+        min-height: 100px;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Map container */
+    .map-wrapper {
+        position: relative;
+        overflow: hidden;
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        height: 100%;
+    }
+    
+    /* Fix map z-index issues */
+    .leaflet-container {
+        z-index: 5;
+    }
+    
+    /* Fix map control z-index issues */
+    .leaflet-top,
+    .leaflet-bottom {
+        z-index: 6;
+    }
+    
+    /* Fix popup z-index */
+    .leaflet-popup {
+        z-index: 7;
+    }
+    
+    .map-info-card {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-top: 1rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .map-info-card h6 {
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .map-info-card p {
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0"><i class="fas fa-map-marker-alt"></i> Standort für "{{ playlist.name }}" hinzufügen</h3>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="custom-card-header">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h5 class="mb-0">Standort zu "{{ playlist.name }}" hinzufügen</h5>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-custom-info">
+                        <i class="fas fa-info-circle"></i> Du kannst die Koordinaten manuell eingeben oder auf der Karte einen Standort auswählen.
+                    </div>
+                    
                     <form method="post">
                         {% csrf_token %}
                         
-                        <div class="alert alert-info mb-4">
-                            <i class="fas fa-info-circle"></i> Du kannst die Koordinaten manuell eingeben oder auf der Karte einen Standort auswählen.
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="{{ form.breitengrad.id_for_label }}" class="form-label">{{ form.breitengrad.label }}</label>
-                                {{ form.breitengrad }}
-                                {% if form.breitengrad.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.breitengrad.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.laengengrad.id_for_label }}" class="form-label">{{ form.laengengrad.label }}</label>
-                                {{ form.laengengrad }}
-                                {% if form.laengengrad.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.laengengrad.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.adresse.id_for_label }}" class="form-label">{{ form.adresse.label }}</label>
-                            {{ form.adresse }}
-                            {% if form.adresse.errors %}
-                                <div class="invalid-feedback d-block">{{ form.adresse.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="{{ form.stadt.id_for_label }}" class="form-label">{{ form.stadt.label }}</label>
-                                {{ form.stadt }}
-                                {% if form.stadt.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.stadt.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.land.id_for_label }}" class="form-label">{{ form.land.label }}</label>
-                                {{ form.land }}
-                                {% if form.land.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.land.errors }}</div>
-                                {% endif %}
+                        <div class="form-section">
+                            <h6 class="mb-3">Koordinaten</h6>
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label for="{{ form.breitengrad.id_for_label }}" class="form-label">
+                                        <i class="fas fa-arrows-alt-v"></i> {{ form.breitengrad.label }}
+                                    </label>
+                                    {{ form.breitengrad.as_widget }}
+                                    {% if form.breitengrad.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.breitengrad.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label for="{{ form.laengengrad.id_for_label }}" class="form-label">
+                                        <i class="fas fa-arrows-alt-h"></i> {{ form.laengengrad.label }}
+                                    </label>
+                                    {{ form.laengengrad.as_widget }}
+                                    {% if form.laengengrad.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.laengengrad.errors }}</div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="{{ form.beschreibung.id_for_label }}" class="form-label">{{ form.beschreibung.label }}</label>
-                            {{ form.beschreibung }}
-                            {% if form.beschreibung.errors %}
-                                <div class="invalid-feedback d-block">{{ form.beschreibung.errors }}</div>
-                            {% endif %}
+                        <div class="form-section">
+                            <h6 class="mb-3">Adressinformationen</h6>
+                            <div class="form-group">
+                                <label for="{{ form.adresse.id_for_label }}" class="form-label">
+                                    <i class="fas fa-map-pin"></i> {{ form.adresse.label }}
+                                </label>
+                                {{ form.adresse.as_widget }}
+                                {% if form.adresse.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.adresse.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label for="{{ form.stadt.id_for_label }}" class="form-label">
+                                        <i class="fas fa-city"></i> {{ form.stadt.label }}
+                                    </label>
+                                    {{ form.stadt.as_widget }}
+                                    {% if form.stadt.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.stadt.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label for="{{ form.land.id_for_label }}" class="form-label">
+                                        <i class="fas fa-globe"></i> {{ form.land.label }}
+                                    </label>
+                                    {{ form.land.as_widget }}
+                                    {% if form.land.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.land.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-secondary">Abbrechen</a>
-                            <button type="submit" class="btn btn-primary">Standort speichern</button>
+                        <div class="form-section">
+                            <h6 class="mb-3">Weitere Informationen</h6>
+                            <div class="form-group">
+                                <label for="{{ form.beschreibung.id_for_label }}" class="form-label">
+                                    <i class="fas fa-comment-alt"></i> {{ form.beschreibung.label }}
+                                </label>
+                                {{ form.beschreibung.as_widget }}
+                                <div class="form-text">Beschreibe, warum dieser Ort zur Playlist passt oder welche Erinnerungen du damit verbindest.</div>
+                                {% if form.beschreibung.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.beschreibung.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Abbrechen
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Standort speichern
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h3 class="mb-0"><i class="fas fa-map"></i> Karte</h3>
+        <div class="col-lg-6">
+            <div class="card shadow h-100">
+                <div class="custom-card-header">
+                    <i class="fas fa-map"></i>
+                    <h5 class="mb-0">Karte</h5>
                 </div>
                 <div class="card-body p-0">
-                    <div id="map" style="height: 500px;"></div>
+                    <div class="map-wrapper">
+                        <div id="map" style="height: 500px;"></div>
+                    </div>
+                    <div class="map-info-card m-3">
+                        <h6><i class="fas fa-info-circle"></i> So funktioniert's</h6>
+                        <p><i class="fas fa-mouse-pointer text-primary"></i> Klicke auf die Karte, um einen Standort auszuwählen</p>
+                        <p><i class="fas fa-hand-pointer text-primary"></i> Ziehe den Marker, um die Position genauer anzupassen</p>
+                        <p><i class="fas fa-location-arrow text-primary"></i> Nutze den Button unten rechts, um deinen aktuellen Standort zu verwenden</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,11 +339,19 @@
         const latField = document.getElementById('{{ form.breitengrad.id_for_label }}');
         const lngField = document.getElementById('{{ form.laengengrad.id_for_label }}');
         
+        // Input-Formatierung für Koordinatenfelder
+        latField.classList.add('form-control');
+        lngField.classList.add('form-control');
+        document.querySelectorAll('input, textarea').forEach(element => {
+            element.classList.add('form-control');
+        });
+        
         // Karte initialisieren (Mannheim als Standard)
         const map = L.map('map').setView([49.483889, 8.468056], 13);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
         }).addTo(map);
         
         // Marker hinzufügen
@@ -147,28 +396,66 @@
         });
         
         // Standort des Benutzers ermitteln
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    
-                    // Karte auf aktuellen Standort zentrieren
-                    map.setView([lat, lng], 15);
-                    
-                    // Benutzerstandort markieren
-                    L.circle([lat, lng], {
-                        radius: 50,
-                        color: 'blue',
-                        fillColor: '#3388ff',
-                        fillOpacity: 0.2
-                    }).addTo(map);
-                },
-                function(error) {
-                    console.log('Fehler bei der Standortermittlung:', error);
+        const geolocateControl = L.control({position: 'bottomright'});
+        
+        geolocateControl.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            div.innerHTML = '<a href="#" title="Meinen Standort anzeigen" style="display:flex; align-items:center; justify-content:center; width:30px; height:30px;"><i class="fas fa-location-arrow"></i></a>';
+            
+            div.onclick = function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            
+                            // Karte auf aktuellen Standort zentrieren
+                            map.setView([lat, lng], 15);
+                            
+                            // Marker setzen oder verschieben
+                            if (marker) {
+                                marker.setLatLng([lat, lng]);
+                            } else {
+                                marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+                                
+                                // Marker-Position aktualisieren
+                                marker.on('dragend', function() {
+                                    const pos = marker.getLatLng();
+                                    latField.value = pos.lat.toFixed(6);
+                                    lngField.value = pos.lng.toFixed(6);
+                                });
+                            }
+                            
+                            // Koordinaten in Formular übernehmen
+                            latField.value = lat.toFixed(6);
+                            lngField.value = lng.toFixed(6);
+                            
+                            // Benutzerstandort markieren
+                            L.circle([lat, lng], {
+                                radius: 50,
+                                color: 'var(--primary)',
+                                fillColor: 'var(--primary)',
+                                fillOpacity: 0.2
+                            }).addTo(map);
+                        },
+                        function(error) {
+                            console.log('Fehler bei der Standortermittlung:', error);
+                            alert('Dein Standort konnte nicht ermittelt werden. Bitte erlaube den Standortzugriff oder wähle manuell einen Standort auf der Karte aus.');
+                        }
+                    );
                 }
-            );
-        }
+                return false;
+            };
+            
+            return div;
+        };
+        
+        geolocateControl.addTo(map);
+        
+        // Karte nach einer kurzen Verzögerung aktualisieren
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 300);
     });
 </script>
 {% endblock %}

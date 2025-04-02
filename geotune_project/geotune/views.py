@@ -22,6 +22,7 @@ from .forms import NutzerCreationForm
 import json
 from math import radians, cos, sin, asin, sqrt, atan2
 from django.urls import reverse
+import logging
 
 def index(request):
     """Homepage-View"""
@@ -138,7 +139,11 @@ def playlist_erstellen(request):
             # Genres speichern (ManyToMany)
             form.save_m2m()
             
-            messages.success(request, 'Playlist erfolgreich erstellt!')
+            # Genre-Verknüpfungen speichern
+            if playlist.genres.count() > 0:
+                playlist.genres.set(playlist.genres.all())
+            
+            messages.success(request, 'Playlist erfolgreich erstellt!', extra_tags='toast')
             return redirect('playlist_detail', playlist_id=playlist.id)
     else:
         form = PlaylistForm()
@@ -179,13 +184,46 @@ def playlist_detail(request, playlist_id):
         if lied_form.is_valid():
             lied = lied_form.save()
             # Lied zur Playlist hinzufügen
-            PlaylistLied.objects.create(
+            playlist_lied = PlaylistLied.objects.create(
                 playlist=playlist,
                 lied=lied,
                 hinzugefuegt_von=request.user
             )
-            messages.success(request, 'Lied erfolgreich hinzugefügt!')
+            
+            # AJAX-Anfrage behandeln
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                # Bereite Lied-Daten für die JSON-Antwort vor
+                lied_data = {
+                    'id': lied.id,
+                    'titel': lied.titel,
+                    'kuenstler': lied.kuenstler,
+                    'album': lied.album,
+                    'dauer': lied.dauer,
+                    'externe_url': lied.externe_url,
+                    'cover_bild': lied.cover_bild
+                }
+                
+                # Sende JSON-Antwort
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Lied erfolgreich hinzugefügt!',
+                    'lied': lied_data,
+                })
+            
+            # Normale Anfrage
+            messages.success(request, 'Lied erfolgreich hinzugefügt!', extra_tags='toast')
             return redirect('playlist_detail', playlist_id=playlist.id)
+        elif request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Bei AJAX-Anfrage Fehler als JSON zurückgeben
+            errors = {}
+            for field, error_list in lied_form.errors.items():
+                errors[field] = [str(error) for error in error_list]
+            
+            return JsonResponse({
+                'success': False,
+                'error': 'Bitte überprüfe die eingegebenen Daten.',
+                'errors': errors
+            }, status=400)
     else:
         lied_form = LiedForm()
     
@@ -203,6 +241,145 @@ def playlist_detail(request, playlist_id):
         'ist_favorit': interaktion.ist_favorit,
         'kommentare': kommentare
     })
+
+@login_required
+def playlist_bearbeiten(request, playlist_id):
+    """Playlist bearbeiten"""
+    playlist = get_object_or_404(Playlist, id=playlist_id)
+    
+    # Überprüfen, ob der Nutzer berechtigt ist
+    if playlist.erstellt_von != request.user:
+        messages.error(request, 'Du hast keine Berechtigung, diese Playlist zu bearbeiten.')
+        return redirect('playlist_detail', playlist_id=playlist.id)
+    
+    if request.method == 'POST':
+        form = PlaylistForm(request.POST, instance=playlist)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Playlist erfolgreich aktualisiert!', extra_tags='toast')
+            return redirect('playlist_detail', playlist_id=playlist.id)
+    else:
+        form = PlaylistForm(instance=playlist)
+    
+    return render(request, 'geotune/playlist_form.html', {
+        'form': form,
+        'playlist': playlist,
+        'is_edit': True,
+    })
+
+@login_required
+def lied_bearbeiten(request, playlist_id, lied_id):
+    """Lied in einer Playlist bearbeiten"""
+    playlist = get_object_or_404(Playlist, id=playlist_id)
+    lied = get_object_or_404(Lied, id=lied_id)
+    playlist_lied = get_object_or_404(PlaylistLied, playlist=playlist, lied=lied)
+    
+    # Überprüfen, ob der Nutzer berechtigt ist
+    if playlist.erstellt_von != request.user:
+        messages.error(request, 'Du hast keine Berechtigung, Lieder in dieser Playlist zu bearbeiten.')
+        return redirect('playlist_detail', playlist_id=playlist.id)
+    
+    if request.method == 'POST':
+        form = LiedForm(request.POST, instance=lied)
+        if form.is_valid():
+            form.save()
+            
+            # AJAX-Anfrage behandeln
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                # Bereite Lied-Daten für die JSON-Antwort vor
+                lied_data = {
+                    'id': lied.id,
+                    'titel': lied.titel,
+                    'kuenstler': lied.kuenstler,
+                    'album': lied.album,
+                    'dauer': lied.dauer,
+                    'externe_url': lied.externe_url,
+                    'cover_bild': lied.cover_bild
+                }
+                
+                # Sende JSON-Antwort
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Lied erfolgreich aktualisiert!',
+                    'lied': lied_data,
+                })
+            
+            # Normale Anfrage
+            messages.success(request, 'Lied erfolgreich aktualisiert!', extra_tags='toast')
+            return redirect('playlist_detail', playlist_id=playlist.id)
+        elif request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Bei AJAX-Anfrage Fehler als JSON zurückgeben
+            errors = {}
+            for field, error_list in form.errors.items():
+                errors[field] = [str(error) for error in error_list]
+            
+            return JsonResponse({
+                'success': False,
+                'error': 'Bitte überprüfe die eingegebenen Daten.',
+                'errors': errors
+            }, status=400)
+    else:
+        # Für GET-Anfragen das Formular mit den aktuellen Daten befüllen
+        form = LiedForm(instance=lied)
+    
+    # Bei normaler Anfrage JSON mit den Lied-Daten zurückgeben
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Format MM:SS für das Frontend berechnen
+        minutes = lied.dauer // 60
+        seconds = lied.dauer % 60
+        dauer_format = f"{minutes}:{seconds:02d}"
+        
+        return JsonResponse({
+            'success': True,
+            'lied': {
+                'id': lied.id,
+                'titel': lied.titel,
+                'kuenstler': lied.kuenstler,
+                'album': lied.album,
+                'dauer': lied.dauer,
+                'dauer_format': dauer_format,
+                'externe_url': lied.externe_url,
+                'cover_bild': lied.cover_bild
+            }
+        })
+    
+    # Nicht-AJAX-Anfragen werden nicht unterstützt
+    return redirect('playlist_detail', playlist_id=playlist.id)
+
+@login_required
+def lied_loeschen(request, playlist_id, lied_id):
+    """Lied aus einer Playlist löschen"""
+    playlist = get_object_or_404(Playlist, id=playlist_id)
+    lied = get_object_or_404(Lied, id=lied_id)
+    
+    # Überprüfen, ob der Nutzer berechtigt ist
+    if playlist.erstellt_von != request.user:
+        messages.error(request, 'Du hast keine Berechtigung, Lieder aus dieser Playlist zu löschen.')
+        return redirect('playlist_detail', playlist_id=playlist.id)
+    
+    # Sicherstellen, dass es einen PlaylistLied-Eintrag gibt
+    playlist_lied = get_object_or_404(PlaylistLied, playlist=playlist, lied=lied)
+    
+    if request.method == 'POST':
+        # PlaylistLied-Eintrag löschen
+        playlist_lied.delete()
+        
+        # Prüfen, ob das Lied noch in anderen Playlists verwendet wird
+        if not PlaylistLied.objects.filter(lied=lied).exists():
+            # Wenn nicht, das Lied komplett löschen
+            lied.delete()
+        
+        # AJAX-Anfrage behandeln
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': 'Lied erfolgreich aus der Playlist entfernt!'
+            })
+        
+        # Normale Anfrage
+        messages.success(request, 'Lied erfolgreich aus der Playlist entfernt!')
+    
+    return redirect('playlist_detail', playlist_id=playlist.id)
 
 @login_required
 def playlist_standort_hinzufuegen(request, playlist_id):
@@ -226,7 +403,7 @@ def playlist_standort_hinzufuegen(request, playlist_id):
                 gueltig_von=timezone.now()
             )
             
-            messages.success(request, 'Standort erfolgreich hinzugefügt!')
+            messages.success(request, 'Standort erfolgreich hinzugefügt!', extra_tags='toast')
             return redirect('playlist_detail', playlist_id=playlist.id)
     else:
         form = StandortForm()
@@ -300,10 +477,10 @@ def suche_erstellen(request):
     has_playlists_with_locations = any(playlist.standorte.count() > 0 for playlist in eigene_playlists)
     
     if request.method == 'POST':
-        form = PlaylistSucheForm(request.POST)
+        form = SucheForm(request.POST)
         if form.is_valid():
             suche = form.save(commit=False)
-            suche.ersteller = request.user
+            suche.erstellt_von = request.user
             suche.save()
             
             # Ausgewählte Playlists mit Reihenfolge speichern
@@ -321,7 +498,7 @@ def suche_erstellen(request):
                 except Playlist.DoesNotExist:
                     pass
             
-            messages.success(request, 'Playlist-Suche erfolgreich erstellt!')
+            messages.success(request, 'Playlist-Suche erfolgreich erstellt!', extra_tags='toast')
             return redirect('index')
     else:
         form = SucheForm()
@@ -581,74 +758,107 @@ def custom_logout(request):
 
 @login_required
 def kommentar_hinzufuegen(request, playlist_id):
-    """Kommentar zu einer Playlist hinzufügen"""
+    """Fügt einen Kommentar zu einer Playlist hinzu"""
+    if request.method != 'POST':
+        # Redirect to playlist detail page for non-POST requests
+        return redirect('playlist_detail', playlist_id=playlist_id)
+    
+    # Get the playlist
     playlist = get_object_or_404(Playlist, id=playlist_id)
     
-    if request.method == 'POST':
-        text = request.POST.get('text')
-        if text:
-            # Kommentar erstellen
-            kommentar = Kommentar.objects.create(
-                nutzer=request.user,
-                playlist=playlist,
-                text=text
-            )
-            
-            # Check if AJAX request
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                # Prepare avatar HTML
-                if hasattr(request.user, 'profilbild') and request.user.profilbild:
-                    avatar_html = f'<img src="{request.user.profilbild.url}" alt="{request.user.username}">'
-                else:
-                    avatar_html = f'<div class="avatar-placeholder">{request.user.username[0].upper()}</div>'
-                
-                # Return JSON response
-                return JsonResponse({
-                    'success': True,
-                    'kommentar': {
-                        'id': kommentar.id,
-                        'text': kommentar.text,
-                        'nutzer_name': request.user.username,
-                        'nutzer_url': reverse('nutzerprofil', args=[request.user.id]),
-                        'datum': kommentar.erstellungsdatum.strftime('%d.%m.%Y'),
-                        'zeit': kommentar.erstellungsdatum.strftime('%H:%M'),
-                        'avatar_html': avatar_html
-                    }
-                })
-            
-            messages.success(request, 'Kommentar erfolgreich hinzugefügt!')
-        else:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Bitte gib einen Kommentartext ein.'
-                })
-            
-            messages.error(request, 'Bitte gib einen Kommentartext ein.')
+    # Extract the comment text from the request
+    text = request.POST.get('text', '').strip()
     
-    return redirect('playlist_detail', playlist_id=playlist.id)
+    if not text:
+        messages.error(request, 'Bitte gib einen Kommentartext ein.')
+        return redirect('playlist_detail', playlist_id=playlist_id)
+    
+    # Create the comment
+    kommentar = Kommentar.objects.create(
+        playlist=playlist,
+        nutzer=request.user,
+        text=text
+    )
+    
+    # Respond to AJAX requests with JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Generate avatar HTML
+        if request.user.profilbild:
+            avatar_html = f'<img src="{request.user.profilbild.url}" alt="{request.user.username}">'
+        else:
+            avatar_html = f'<div class="avatar-placeholder">{request.user.username[0].upper()}</div>'
+        
+        # Return a JSON response with the comment data
+        return JsonResponse({
+            'success': True,
+            'kommentar': {
+                'id': kommentar.id,
+                'text': kommentar.text,
+                'nutzer_name': kommentar.nutzer.username,
+                'nutzer_id': kommentar.nutzer.id,
+                'nutzer_url': reverse('nutzerprofil', args=[kommentar.nutzer.id]),
+                'datum': kommentar.erstellungsdatum.strftime('%d.%m.%Y'),
+                'zeit': kommentar.erstellungsdatum.strftime('%H:%M'),
+                'avatar_html': avatar_html
+            }
+        })
+    
+    # Redirect to the playlist detail page for regular form submissions
+    messages.success(request, 'Kommentar wurde erfolgreich hinzugefügt.')
+    return redirect('playlist_detail', playlist_id=playlist_id)
 
 @login_required
 def playlist_toggle_favorite(request, playlist_id):
-    """Toggle den Favoriten-Status einer Playlist für den angemeldeten Nutzer"""
+    """Toggle the favorite status of a playlist for the logged-in user."""
     playlist = get_object_or_404(Playlist, id=playlist_id)
+    user = request.user
     
-    # Get or create interaction
-    interaktion, created = NutzerPlaylistInteraktion.objects.get_or_create(
-        nutzer=request.user,
-        playlist=playlist,
-        defaults={'ist_favorit': True, 'letzter_besuch': timezone.now()}
-    )
-    
-    if not created:
-        # Toggle favorite status
-        interaktion.ist_favorit = not interaktion.ist_favorit
-        interaktion.save()
-    
-    return JsonResponse({
-        'success': True,
-        'is_favorite': interaktion.ist_favorit
-    })
+    try:
+        # Get or create interaction
+        interaction, created = NutzerPlaylistInteraktion.objects.get_or_create(
+            nutzer=user,
+            playlist=playlist,
+            defaults={'ist_favorit': True, 'letzter_besuch': timezone.now()}
+        )
+        
+        if not created:
+            # Toggle favorite status
+            interaction.ist_favorit = not interaction.ist_favorit
+            interaction.save()
+        
+        # Prepare message based on favorite status
+        if interaction.ist_favorit:
+            message_text = "Playlist wurde zu deinen Favoriten hinzugefügt."
+        else:
+            message_text = "Playlist wurde aus deinen Favoriten entfernt."
+        
+        # For AJAX requests, return a proper JSON response
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'is_favorite': interaction.ist_favorit,
+                'message': message_text
+            })
+        
+        # For normal form submissions, set a message and redirect
+        messages.success(request, message_text)
+        return redirect('playlist_detail', playlist_id=playlist_id)
+        
+    except Exception as e:
+        # Log the error for server-side debugging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in playlist_toggle_favorite: {str(e)}", exc_info=True)
+        
+        # For AJAX requests, return an error response
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': "Fehler beim Aktualisieren des Favoriten-Status"
+            }, status=500)
+        
+        # For normal form submissions, set an error message and redirect
+        messages.error(request, "Fehler beim Aktualisieren des Favoriten-Status")
+        return redirect('playlist_detail', playlist_id=playlist_id)
 
 @login_required
 def password_change(request):
