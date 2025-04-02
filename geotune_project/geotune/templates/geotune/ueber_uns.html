@@ -1,0 +1,61 @@
+{% extends 'geotune/base.html' %}
+
+{% block title %}Über GeoTune - Entdecke Musik auf neue Weise{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h1 class="h2 mb-0"><i class="fas fa-info-circle me-2"></i>Über GeoTune</h1>
+        </div>
+        <div class="card-body p-4">
+            <div class="row">
+                <div class="col-md-8">
+                    <h2 class="h3 mb-4">Unsere Geschichte</h2>
+                    <p>GeoTune entstand aus der Idee, Geocaching mit Musik zu verbinden. Wir glauben, dass jeder Ort seine eigene Stimmung hat, die durch Musik verstärkt werden kann. Unsere Plattform ermöglicht es Musikliebhabern, ihre Lieblingslieder mit bestimmten Orten zu verknüpfen und mit anderen zu teilen.</p>
+                    
+                    <h2 class="h3 mb-4 mt-5">Unsere Mission</h2>
+                    <p>Wir möchten Menschen durch Musik verbinden und neue Wege schaffen, um Orte und Erlebnisse zu entdecken. Mit GeoTune kannst du:</p>
+                    
+                    <ul class="feature-list mb-5">
+                        <li><i class="fas fa-map-marker-alt text-primary me-2"></i> Playlists an bestimmten Orten entdecken</li>
+                        <li><i class="fas fa-music text-primary me-2"></i> Deine eigenen Playlists erstellen und an Orten hinterlegen</li>
+                        <li><i class="fas fa-search text-primary me-2"></i> Auf musikalische Schatzsuche gehen</li>
+                        <li><i class="fas fa-users text-primary me-2"></i> Dich mit Gleichgesinnten verbinden</li>
+                    </ul>
+                    
+                    <h2 class="h3 mb-4">Das Team</h2>
+                    <p>GeoTune wird von einem kleinen Team von Musik- und Technikbegeisterten entwickelt. Wir arbeiten ständig daran, die Plattform zu verbessern und neue Funktionen hinzuzufügen.</p>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card mb-4 border-0 shadow-sm">
+                        <div class="card-body bg-light rounded">
+                            <h3 class="h4 mb-3"><i class="fas fa-lightbulb text-accent me-2"></i>So funktioniert's</h3>
+                            <ol class="mb-0">
+                                <li class="mb-3">Erstelle ein Konto und personalisiere dein Profil</li>
+                                <li class="mb-3">Erstelle deine eigenen Playlists und verknüpfe sie mit besonderen Orten</li>
+                                <li class="mb-3">Entdecke Playlists in deiner Nähe</li>
+                                <li>Verbinde dich mit anderen Musikliebhabern</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    {% load static %}
+                    <img src="{% static 'media/GeoTune_Logo.jpg' %}" alt="GeoTune Logo" class="img-fluid rounded mb-4">
+                    
+                    <div class="card border-0 bg-accent rounded">
+                        <div class="card-body">
+                            <h3 class="h5 mb-3"><i class="fas fa-envelope me-2"></i>Kontakt</h3>
+                            <p class="mb-3">Hast du Fragen oder Feedback? Wir freuen uns, von dir zu hören!</p>
+                            <p class="mb-0">
+                                <strong>E-Mail:</strong> info@geotune.de<br>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

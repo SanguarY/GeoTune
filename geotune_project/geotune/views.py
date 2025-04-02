@@ -1,16 +1,18 @@
 # views.py - Definition der Views für GeoTune
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.http import JsonResponse
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Count, F, Sum
 from django.contrib import messages
 from .models import (
     Nutzer, Playlist, Lied, Genre, Standort, 
     NutzerVerbindung, PlaylistLied, Suche,
     NutzerPlaylistInteraktion, SuchePlaylist, NutzerSucheTeilnahme, 
-    NutzerGenrePraeferenz, PlaylistStandort
+    NutzerGenrePraeferenz, PlaylistStandort, Kommentar
 )
 from .forms import (
     PlaylistForm, LiedForm, NutzerProfilForm,
@@ -18,7 +20,8 @@ from .forms import (
 )
 from .forms import NutzerCreationForm
 import json
-from math import radians, cos, sin, asin, sqrt
+from math import radians, cos, sin, asin, sqrt, atan2
+from django.urls import reverse
 
 def index(request):
     """Homepage-View"""
@@ -69,8 +72,47 @@ def nutzerprofil(request, nutzer_id=None):
     if request.method == 'POST' and ist_eigenes_profil:
         form = NutzerProfilForm(request.POST, request.FILES, instance=profil_nutzer)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Profil erfolgreich aktualisiert!')
+            # Unterschiedliche Behandlung je nach geklicktem Button
+            if 'update_profile' in request.POST:
+                # Nur Profilinformationen speichern, ohne Genres
+                profil = form.save(commit=False)
+                profil.save()
+                
+                # Prüfen, ob AJAX-Anfrage
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'Profil erfolgreich aktualisiert!',
+                        'username': profil.username,
+                        'first_name': profil.first_name,
+                        'last_name': profil.last_name,
+                    })
+                else:
+                    messages.success(request, 'Profil erfolgreich aktualisiert!')
+            elif 'update_genres' in request.POST:
+                # Nur Genres speichern
+                ausgewaehlte_genres = form.cleaned_data['genrevorlieben']
+                
+                # Bestehende Genre-Präferenzen entfernen
+                profil_nutzer.genre_praeferenzen.all().delete()
+                
+                # Neue Genre-Präferenzen erstellen
+                for genre in ausgewaehlte_genres:
+                    NutzerGenrePraeferenz.objects.create(
+                        nutzer=profil_nutzer,
+                        genre=genre,
+                        praeferenzlevel=7  # Standard-Präferenzlevel
+                    )
+                
+                # Prüfen, ob AJAX-Anfrage
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'Bevorzugte Genres erfolgreich aktualisiert!'
+                    })
+                else:
+                    messages.success(request, 'Bevorzugte Genres erfolgreich aktualisiert!')
+            
             return redirect('nutzerprofil')
     else:
         form = NutzerProfilForm(instance=profil_nutzer) if ist_eigenes_profil else None
@@ -150,12 +192,16 @@ def playlist_detail(request, playlist_id):
     # Standorte abrufen
     standorte = PlaylistStandort.objects.filter(playlist=playlist).select_related('standort') # type: ignore
     
+    # Kommentare abrufen
+    kommentare = Kommentar.objects.filter(playlist=playlist).select_related('nutzer').order_by('-erstellungsdatum')
+    
     return render(request, 'geotune/playlist_detail.html', {
         'playlist': playlist,
         'lieder': lieder,
         'lied_form': lied_form,
         'standorte': standorte,
-        'ist_favorit': interaktion.ist_favorit
+        'ist_favorit': interaktion.ist_favorit,
+        'kommentare': kommentare
     })
 
 @login_required
@@ -242,35 +288,48 @@ def playlists_in_der_naehe(request):
 
 @login_required
 def suche_erstellen(request):
-    """Neue Playlist-Suche erstellen"""
+    """View zum Erstellen einer neuen Suche"""
+    # Nur für eingeloggte Nutzer
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # Holen der eigenen Playlists
+    eigene_playlists = Playlist.objects.filter(erstellt_von=request.user).order_by('-erstellungsdatum')
+    
+    # Prüfen, ob Playlists mit Standorten existieren
+    has_playlists_with_locations = any(playlist.standorte.count() > 0 for playlist in eigene_playlists)
+    
     if request.method == 'POST':
-        form = SucheForm(request.POST)
+        form = PlaylistSucheForm(request.POST)
         if form.is_valid():
             suche = form.save(commit=False)
-            suche.erstellt_von = request.user
+            suche.ersteller = request.user
             suche.save()
             
-            # Playlists hinzufügen
-            playlist_ids = request.POST.getlist('playlists')
-            
-            for i, playlist_id in enumerate(playlist_ids):
-                SuchePlaylist.objects.create( # type: ignore
-                    suche=suche,
-                    playlist_id=int(playlist_id),
-                    reihenfolge_nummer=i+1
-                )
+            # Ausgewählte Playlists mit Reihenfolge speichern
+            playlists = request.POST.getlist('playlists')
+            for i, playlist_id in enumerate(playlists, 1):
+                try:
+                    playlist = Playlist.objects.get(id=playlist_id, erstellt_von=request.user)
+                    # Nur Playlists mit Standorten können hinzugefügt werden
+                    if playlist.standorte.count() > 0:
+                        SuchePlaylist.objects.create(
+                            suche=suche,
+                            playlist=playlist,
+                            reihenfolge_nummer=i
+                        )
+                except Playlist.DoesNotExist:
+                    pass
             
             messages.success(request, 'Playlist-Suche erfolgreich erstellt!')
-            return redirect('suche_detail', suche_id=suche.id)
+            return redirect('index')
     else:
         form = SucheForm()
     
-    # Eigene Playlists des Nutzers für die Auswahl anzeigen
-    eigene_playlists = Playlist.objects.filter(erstellt_von=request.user)
-    
     return render(request, 'geotune/suche_form.html', {
         'form': form,
-        'eigene_playlists': eigene_playlists
+        'eigene_playlists': eigene_playlists,
+        'has_playlists_with_locations': has_playlists_with_locations,
     })
 
 @login_required
@@ -350,7 +409,12 @@ def verbindung_anfordern(request, nutzer_id):
         )
         messages.success(request, f'Verbindungsanfrage an {ziel_nutzer.username} gesendet!')
     
-    return redirect('nutzerprofil', nutzer_id=nutzer_id)
+    # Überprüfen, woher die Anfrage kam (Referer prüfen)
+    referer = request.META.get('HTTP_REFERER', '')
+    if 'nutzer_empfehlungen' in referer:
+        return redirect('nutzer_empfehlungen')
+    else:
+        return redirect('nutzerprofil', nutzer_id=nutzer_id)
 
 @login_required
 def verbindung_status_aendern(request, verbindung_id, neuer_status):
@@ -438,12 +502,47 @@ def nutzer_empfehlungen(request):
         verbundene_ids.add(n1)
         verbundene_ids.add(n2)
     
-    # Verbundene Nutzer herausfiltern
-    empfohlene_nutzer = aehnliche_nutzer.exclude(id__in=verbundene_ids)
+    # Nutzer, denen bereits eine Anfrage geschickt wurde, abrufen
+    angefragt_ids = NutzerVerbindung.objects.filter(
+        nutzer1=request.user,
+        status='angefragt'
+    ).values_list('nutzer2_id', flat=True)
+    
+    # Verbundene Nutzer und Nutzer mit ausstehenden Anfragen herausfiltern
+    empfohlene_nutzer = aehnliche_nutzer.exclude(id__in=verbundene_ids).exclude(id__in=angefragt_ids)
+    
+    # Für jeden empfohlenen Nutzer die Playlist- und Verbindungszahlen berechnen
+    empfohlene_nutzer_mit_daten = []
+    for nutzer in empfohlene_nutzer:
+        # Playlists zählen
+        playlist_count = nutzer.erstellte_playlists.count()
+        
+        # Verbindungen zählen (akzeptierte)
+        verbindungen_count = NutzerVerbindung.objects.filter(
+            Q(nutzer1=nutzer, status='akzeptiert') | Q(nutzer2=nutzer, status='akzeptiert')
+        ).count()
+        
+        empfohlene_nutzer_mit_daten.append({
+            'nutzer': nutzer,
+            'playlist_count': playlist_count,
+            'verbindungen_count': verbindungen_count
+        })
     
     return render(request, 'geotune/nutzer_empfehlungen.html', {
-        'empfohlene_nutzer': empfohlene_nutzer
+        'empfohlene_nutzer': empfohlene_nutzer_mit_daten
     })
+
+def ueber_uns(request):
+    """Über GeoTune Seite"""
+    return render(request, 'geotune/ueber_uns.html')
+
+def datenschutz(request):
+    """Datenschutz Seite"""
+    return render(request, 'geotune/datenschutz.html')
+
+def kontakt(request):
+    """Kontakt Seite"""
+    return render(request, 'geotune/kontakt.html')
 
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
@@ -452,18 +551,188 @@ from django.contrib.auth.forms import UserCreationForm
 def register(request):
     """Registrierung für neue Nutzer"""
     if request.method == 'POST':
-        form = NutzerCreationForm(request.POST)  # Benutzen Sie das neue Formular
+        form = NutzerCreationForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save()
+            
+            # Extrahiere gewählte Genres aus dem Formular
+            selected_genres = form.cleaned_data.get('genrevorlieben')
+            
+            # Erstelle NutzerGenrePraeferenz-Objekte für jedes ausgewählte Genre
+            if selected_genres:
+                for genre in selected_genres:
+                    NutzerGenrePraeferenz.objects.create(
+                        nutzer=user,
+                        genre=genre,
+                        praeferenzlevel=7  # Standard-Präferenzlevel
+                    )
+            
             login(request, user)
-            messages.success(request, 'Registrierung erfolgreich!')
+            messages.success(request, 'Dein Account wurde erfolgreich erstellt!')
             return redirect('index')
     else:
-        form = NutzerCreationForm()  # Benutzen Sie das neue Formular
-    
-    return render(request, 'geotune/registration/register.html', {'form': form})
+        form = NutzerCreationForm()
+    return render(request, 'geotune/registration/register.html', {'form': form, 'genres': Genre.objects.all()})
 
 def custom_logout(request):
     from django.contrib.auth import logout
     logout(request)
     return redirect('index')
+
+@login_required
+def kommentar_hinzufuegen(request, playlist_id):
+    """Kommentar zu einer Playlist hinzufügen"""
+    playlist = get_object_or_404(Playlist, id=playlist_id)
+    
+    if request.method == 'POST':
+        text = request.POST.get('text')
+        if text:
+            # Kommentar erstellen
+            kommentar = Kommentar.objects.create(
+                nutzer=request.user,
+                playlist=playlist,
+                text=text
+            )
+            
+            # Check if AJAX request
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                # Prepare avatar HTML
+                if hasattr(request.user, 'profilbild') and request.user.profilbild:
+                    avatar_html = f'<img src="{request.user.profilbild.url}" alt="{request.user.username}">'
+                else:
+                    avatar_html = f'<div class="avatar-placeholder">{request.user.username[0].upper()}</div>'
+                
+                # Return JSON response
+                return JsonResponse({
+                    'success': True,
+                    'kommentar': {
+                        'id': kommentar.id,
+                        'text': kommentar.text,
+                        'nutzer_name': request.user.username,
+                        'nutzer_url': reverse('nutzerprofil', args=[request.user.id]),
+                        'datum': kommentar.erstellungsdatum.strftime('%d.%m.%Y'),
+                        'zeit': kommentar.erstellungsdatum.strftime('%H:%M'),
+                        'avatar_html': avatar_html
+                    }
+                })
+            
+            messages.success(request, 'Kommentar erfolgreich hinzugefügt!')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Bitte gib einen Kommentartext ein.'
+                })
+            
+            messages.error(request, 'Bitte gib einen Kommentartext ein.')
+    
+    return redirect('playlist_detail', playlist_id=playlist.id)
+
+@login_required
+def playlist_toggle_favorite(request, playlist_id):
+    """Toggle den Favoriten-Status einer Playlist für den angemeldeten Nutzer"""
+    playlist = get_object_or_404(Playlist, id=playlist_id)
+    
+    # Get or create interaction
+    interaktion, created = NutzerPlaylistInteraktion.objects.get_or_create(
+        nutzer=request.user,
+        playlist=playlist,
+        defaults={'ist_favorit': True, 'letzter_besuch': timezone.now()}
+    )
+    
+    if not created:
+        # Toggle favorite status
+        interaktion.ist_favorit = not interaktion.ist_favorit
+        interaktion.save()
+    
+    return JsonResponse({
+        'success': True,
+        'is_favorite': interaktion.ist_favorit
+    })
+
+@login_required
+def password_change(request):
+    """Ändert das Passwort des Nutzers"""
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Wichtig: Session-Auth-Hash aktualisieren, damit der Nutzer nicht ausgeloggt wird
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Dein Passwort wurde erfolgreich geändert!')
+            return redirect('nutzerprofil')
+        else:
+            for error in form.errors.values():
+                messages.error(request, error)
+            return redirect('nutzerprofil')
+    else:
+        return redirect('nutzerprofil')
+
+@login_required
+def delete_account(request):
+    """Löscht den Account des Nutzers"""
+    if request.method == 'POST':
+        password = request.POST.get('password_confirm')
+        user = request.user
+        
+        # Überprüfen, ob das eingegebene Passwort korrekt ist
+        if user.check_password(password):
+            # Account löschen
+            try:
+                # Alle verknüpften Daten müssen zuerst gelöscht werden
+                # Dies hängt von den genauen Model-Beziehungen ab
+                user.delete()
+                messages.success(request, 'Dein Account wurde erfolgreich gelöscht.')
+                logout(request)
+                return redirect('index')
+            except Exception as e:
+                messages.error(request, f'Fehler beim Löschen des Accounts: {str(e)}')
+                return redirect('nutzerprofil')
+        else:
+            messages.error(request, 'Das eingegebene Passwort ist nicht korrekt.')
+            return redirect('nutzerprofil')
+    else:
+        return redirect('nutzerprofil')
+
+@login_required
+def update_bio(request):
+    """Aktualisiert nur die Bio des Nutzers"""
+    if request.method == 'POST':
+        bio = request.POST.get('bio', '')
+        user = request.user
+        user.bio = bio
+        user.save()
+        
+        # Prüfen, ob AJAX-Anfrage
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Bio erfolgreich aktualisiert!',
+                'bio': bio
+            })
+        else:
+            messages.success(request, 'Bio erfolgreich aktualisiert!')
+            return redirect('nutzerprofil')
+    
+    return redirect('nutzerprofil')
+
+@login_required
+def update_profile_image(request):
+    """Aktualisiert nur das Profilbild des Nutzers"""
+    if request.method == 'POST' and request.FILES.get('profilbild'):
+        user = request.user
+        user.profilbild = request.FILES['profilbild']
+        user.save()
+        
+        # Prüfen, ob AJAX-Anfrage
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Profilbild erfolgreich aktualisiert!',
+                'image_url': user.profilbild.url if user.profilbild else None
+            })
+        else:
+            messages.success(request, 'Profilbild erfolgreich aktualisiert!')
+            return redirect('nutzerprofil')
+    
+    return redirect('nutzerprofil')

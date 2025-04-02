@@ -91,15 +91,26 @@ DATABASES = {
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'OPTIONS': {
+            'user_attributes': ['username', 'email', 'first_name', 'last_name'],
+            'max_similarity': 0.7,
+        },
+        'MESSAGE': 'Das Passwort ist zu ähnlich zu deinem Benutzernamen oder anderen persönlichen Informationen.',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,
+        },
+        'MESSAGE': 'Das Passwort muss mindestens 8 Zeichen lang sein.',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'MESSAGE': 'Das Passwort ist zu einfach und zu häufig verwendet.',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'MESSAGE': 'Das Passwort darf nicht nur aus Zahlen bestehen.',
     },
 ]
 
@@ -107,14 +118,26 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'de'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Berlin'
 
 USE_I18N = True
 
 USE_TZ = True
 
+# Benutzerdefinierte Validierungsnachrichten
+# FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
+
+# Deutsche Validierungsnachrichten
+from django.contrib.messages import constants as messages
+MESSAGE_TAGS = {
+    messages.DEBUG: 'alert-secondary',
+    messages.INFO: 'alert-info',
+    messages.SUCCESS: 'alert-success',
+    messages.WARNING: 'alert-warning',
+    messages.ERROR: 'alert-danger',
+}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/

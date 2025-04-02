@@ -3,146 +3,348 @@
 {% block title %}Neue Playlist-Suche erstellen - GeoTune{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0"><i class="fas fa-search"></i> Neue Playlist-Suche erstellen</h3>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div class="alert alert-info mb-4">
-                            <i class="fas fa-info-circle"></i> Erstelle eine Playlist-Suche, um mehrere deiner Playlists zu einer Schatzsuche zu verbinden!
+<div class="playlist-form-container">
+    <!-- Form Card -->
+    <div class="playlist-form-card shadow-lg">
+        <div class="playlist-form-header">
+            <h3 class="d-flex align-items-center">
+                <i class="fas fa-search me-3"></i> Neue Playlist-Suche erstellen
+            </h3>
+            <p>Verbinde mehrere deiner Playlists zu einer Schatzsuche auf der Karte!</p>
+        </div>
+        
+        <div class="playlist-form-body">
+            <!-- Introduction Card -->
+            <div class="card mb-4 border-0" style="background-color: rgba(var(--primary-rgb), 0.05);">
+                <div class="card-body p-3">
+                    <div class="d-flex">
+                        <div class="me-3 text-primary">
+                            <i class="fas fa-info-circle fa-2x"></i>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
-                            {{ form.name }}
-                            {% if form.name.errors %}
-                                <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
-                            {% endif %}
+                        <div>
+                            <h5 class="card-title">Was ist eine Playlist-Suche?</h5>
+                            <p class="card-text mb-0">Eine Playlist-Suche verbindet mehrere deiner Playlists zu einer Art Schatzsuche. Nutzer können deiner Route folgen und nacheinander deine Playlists entdecken. Die Reihenfolge der ausgewählten Playlists bestimmt die Route der Suche.</p>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.beschreibung.id_for_label }}" class="form-label">{{ form.beschreibung.label }}</label>
-                            {{ form.beschreibung }}
-                            {% if form.beschreibung.errors %}
-                                <div class="invalid-feedback d-block">{{ form.beschreibung.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="{{ form.startdatum.id_for_label }}" class="form-label">{{ form.startdatum.label }}</label>
-                                {{ form.startdatum }}
-                                {% if form.startdatum.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.startdatum.errors }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.enddatum.id_for_label }}" class="form-label">{{ form.enddatum.label }}</label>
-                                {{ form.enddatum }}
-                                {% if form.enddatum.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.enddatum.errors }}</div>
-                                {% endif %}
-                                <small class="form-text text-muted">Optional. Leer lassen für eine unbefristete Suche.</small>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label class="form-label">Playlists auswählen</label>
-                            <div class="alert alert-info">
-                                <i class="fas fa-exclamation-triangle"></i> Wichtig: Die Reihenfolge der ausgewählten Playlists bestimmt die Reihenfolge der Suche.
-                            </div>
-                            
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 50px;">Nr.</th>
-                                            <th>Auswählen</th>
-                                            <th>Name</th>
-                                            <th>Standorte</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="playlist-list">
-                                        {% for playlist in eigene_playlists %}
-                                        <tr>
-                                            <td>
-                                                <span class="order-number badge bg-secondary">-</span>
-                                            </td>
-                                            <td>
-                                                <div class="form-check">
-                                                    <input type="checkbox" class="form-check-input playlist-checkbox" id="playlist-{{ playlist.id }}" value="{{ playlist.id }}" name="playlists">
-                                                    <input type="hidden" name="playlist_order[]" value="{{ playlist.id }}" disabled>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <label for="playlist-{{ playlist.id }}" class="form-check-label">
-                                                    {{ playlist.name }}
-                                                </label>
-                                            </td>
-                                            <td>
-                                                {{ playlist.standorte.count }} Standort(e)
-                                            </td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted">
-                                                Du hast noch keine Playlists erstellt.
-                                                <br>
-                                                <a href="{% url 'playlist_erstellen' %}" class="btn btn-sm btn-primary mt-2">
-                                                    <i class="fas fa-plus"></i> Playlist erstellen
-                                                </a>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{% url 'index' %}" class="btn btn-secondary">Abbrechen</a>
-                            <button type="submit" class="btn btn-primary">Suche erstellen</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
+            
+            <!-- Tips Card -->
+            <div class="card mb-4 border-0" style="background-color: rgba(var(--accent-rgb), 0.1); border-radius: var(--border-radius);">
+                <div class="card-body p-3">
+                    <div class="d-flex">
+                        <div class="me-3 text-accent">
+                            <i class="fas fa-lightbulb fa-2x"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title">Tipps für eine tolle Playlist-Suche</h5>
+                            <ul class="mb-0 ps-3">
+                                <li>Erstelle eine logische Route zwischen den Standorten.</li>
+                                <li>Wähle Standorte, die gut erreichbar sind.</li>
+                                <li>Achte darauf, dass alle ausgewählten Playlists Standorte haben.</li>
+                                <li>Gib eine klare Beschreibung, worum es bei deiner Suche geht.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post" class="playlist-form needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="mb-4">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                        <i class="fas fa-tag"></i>{{ form.name.label }}
+                    </label>
+                    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.html_name }}" value="{{ form.name.value|default:'' }}" required>
+                    <div class="form-text">Gib deiner Suche einen eingängigen Namen.</div>
+                    {% if form.name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-4">
+                    <label for="{{ form.beschreibung.id_for_label }}" class="form-label">
+                        <i class="fas fa-align-left"></i>{{ form.beschreibung.label }}
+                    </label>
+                    <textarea class="form-control" id="{{ form.beschreibung.id_for_label }}" name="{{ form.beschreibung.html_name }}" rows="3" required>{{ form.beschreibung.value|default:'' }}</textarea>
+                    <div class="form-text">Beschreibe, worum es bei deiner Suche geht.</div>
+                    {% if form.beschreibung.errors %}
+                        <div class="invalid-feedback d-block">{{ form.beschreibung.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Date Range -->
+                <div class="mb-4">
+                    <label for="{{ form.startdatum.id_for_label }}" class="form-label">
+                        <i class="fas fa-calendar"></i>{{ form.startdatum.label }}
+                    </label>
+                    <input type="date" class="form-control" id="{{ form.startdatum.id_for_label }}" name="{{ form.startdatum.html_name }}" value="{{ form.startdatum.value|default:'' }}" required>
+                    <div class="form-text">Ab wann soll die Suche verfügbar sein?</div>
+                    {% if form.startdatum.errors %}
+                        <div class="invalid-feedback d-block">{{ form.startdatum.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-4">
+                    <label for="{{ form.enddatum.id_for_label }}" class="form-label">
+                        <i class="fas fa-calendar-check"></i>{{ form.enddatum.label }}
+                    </label>
+                    <input type="date" class="form-control" id="{{ form.enddatum.id_for_label }}" name="{{ form.enddatum.html_name }}" value="{{ form.enddatum.value|default:'' }}">
+                    <div class="form-text">Optional. Leer lassen für eine unbefristete Suche.</div>
+                    {% if form.enddatum.errors %}
+                        <div class="invalid-feedback d-block">{{ form.enddatum.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Playlist Selection -->
+                <div class="visibility-toggle mb-4">
+                    <h5 class="form-label d-flex align-items-center mb-3">
+                        <i class="fas fa-list-ol text-primary me-2"></i> Playlists auswählen und ordnen
+                    </h5>
+                    
+                    <div class="alert mb-4" style="background-color: rgba(var(--accent-rgb), 0.15); border: none; border-radius: var(--border-radius);">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-exclamation-triangle fa-2x text-accent"></i>
+                            </div>
+                            <div>
+                                <h5 class="alert-heading">Wichtiger Hinweis</h5>
+                                <p class="mb-0">Die Reihenfolge der ausgewählten Playlists bestimmt die Reihenfolge der Suche. Wähle Playlists aus, die Standorte haben, damit die Suche funktioniert.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if eigene_playlists %}
+                        {% if not has_playlists_with_locations %}
+                        <div id="no-locations-indicator" style="display: none;" data-message="Keine Playlists mit Standorten vorhanden. Füge zuerst Standorte zu deinen Playlists hinzu."></div>
+                        {% endif %}
+                        
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead style="background-color: rgba(var(--primary-rgb), 0.05);">
+                                    <tr>
+                                        <th style="width: 60px;" class="text-center">NR.</th>
+                                        <th style="width: 80px;" class="text-center">AUSWÄHLEN</th>
+                                        <th>NAME</th>
+                                        <th style="width: 100px;" class="text-center">STANDORTE</th>
+                                        <th style="width: 100px;" class="text-center">LIEDER</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="playlist-list">
+                                    {% for playlist in eigene_playlists %}
+                                    <tr class="playlist-row" style="{% if playlist.standorte.count == 0 %}background-color: rgba(var(--accent-rgb), 0.1);{% endif %}">
+                                        <td class="text-center">
+                                            <span class="order-number badge rounded-pill bg-dark">-</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="form-check d-flex justify-content-center">
+                                                <input type="checkbox" class="form-check-input playlist-checkbox" id="playlist-{{ playlist.id }}" value="{{ playlist.id }}" name="playlists" {% if playlist.standorte.count == 0 %}disabled{% endif %}>
+                                                <input type="hidden" name="playlist_order[]" value="{{ playlist.id }}" disabled>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <label for="playlist-{{ playlist.id }}" class="form-check-label" {% if playlist.standorte.count == 0 %}title="Diese Playlist hat keine Standorte und kann nicht ausgewählt werden"{% endif %}>
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-music text-primary me-2"></i>
+                                                    <div>
+                                                        <strong>{{ playlist.name }}</strong>
+                                                        <div class="small text-muted">Erstellt am {{ playlist.erstellungsdatum|date:"d.m.Y" }}</div>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if playlist.standorte.count > 0 %}
+                                                <span class="badge bg-primary rounded-pill">{{ playlist.standorte.count }}</span>
+                                            {% else %}
+                                                <span class="badge bg-danger rounded-pill" title="Diese Playlist hat keine Standorte und kann nicht ausgewählt werden">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-dark rounded-pill">{{ playlist.lieder.count }}</span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center p-4">
+                                            <div class="mb-3">
+                                                <i class="fas fa-music fa-3x text-muted"></i>
+                                            </div>
+                                            <h5>Keine Playlists vorhanden</h5>
+                                            <p class="text-muted mb-3">Du hast noch keine Playlists erstellt.</p>
+                                            <a href="{% url 'playlist_erstellen' %}" class="btn-submit">
+                                                <i class="fas fa-plus me-2"></i>Playlist erstellen
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {% if eigene_playlists %}
+                        <div class="mt-3">
+                            <div id="selectedCount" class="fw-bold mb-0 text-danger">0 Playlists ausgewählt</div>
+                        </div>
+                        
+                        <div id="no-selection-error" style="display: none;" data-message="Bitte wähle mindestens eine Playlist aus"></div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <a href="{% url 'index' %}" class="btn-cancel">
+                        <i class="fas fa-times me-2"></i>Abbrechen
+                    </a>
+                    <button type="button" class="btn-submit" id="submitBtn">
+                        <i class="fas fa-save me-2"></i>Suche erstellen
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    function showToast(message, isError = false) {
+        console.log("Showing toast:", message, isError);
+        
+        // Fallback if Bootstrap is not available
+        if (typeof bootstrap === 'undefined') {
+            alert(message);
+            return;
+        }
+        
+        // Create toast element
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center ${isError ? 'text-white bg-danger' : 'bg-primary text-white'}`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Add to container
+        const toastContainer = document.querySelector('.toast-container');
+        toastContainer.appendChild(toastEl);
+        
+        // Show toast
+        const toast = new bootstrap.Toast(toastEl, {
+            delay: 5000
+        });
+        toast.show();
+        
+        // Remove after hiding
+        toastEl.addEventListener('hidden.bs.toast', function() {
+            toastEl.remove();
+        });
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         const checkboxes = document.querySelectorAll('.playlist-checkbox');
         const orderNumbers = document.querySelectorAll('.order-number');
         const orderInputs = document.querySelectorAll('input[name="playlist_order[]"]');
+        const selectedCountEl = document.getElementById('selectedCount');
+        const submitBtn = document.getElementById('submitBtn');
+        const noSelectionError = document.getElementById('no-selection-error');
+        const noLocationsIndicator = document.getElementById('no-locations-indicator');
+        
+        console.log("DOM Content Loaded. Submit button:", submitBtn);
+        
+        // Check if we have no playlists with locations and show toast
+        if (noLocationsIndicator) {
+            showToast(noLocationsIndicator.dataset.message, true);
+        }
+        
+        // Visual state variables
+        let isButtonEnabled = false;
         
         // Funktion zum Aktualisieren der Reihenfolge
         function updateOrder() {
             let order = 1;
+            let selectedCount = 0;
             
             checkboxes.forEach((checkbox, index) => {
                 if (checkbox.checked) {
                     orderNumbers[index].textContent = order;
-                    orderNumbers[index].classList.remove('bg-secondary');
+                    orderNumbers[index].classList.remove('bg-dark');
                     orderNumbers[index].classList.add('bg-primary');
                     
                     orderInputs[index].disabled = false;
+                    selectedCount++;
                     
                     order++;
                 } else {
                     orderNumbers[index].textContent = '-';
                     orderNumbers[index].classList.remove('bg-primary');
-                    orderNumbers[index].classList.add('bg-secondary');
+                    orderNumbers[index].classList.add('bg-dark');
                     
                     orderInputs[index].disabled = true;
+                }
+            });
+            
+            // Update selected count
+            if (selectedCountEl) {
+                selectedCountEl.textContent = `${selectedCount} Playlist${selectedCount !== 1 ? 's' : ''} ausgewählt`;
+                
+                if (selectedCount > 0) {
+                    selectedCountEl.classList.remove('text-danger');
+                    selectedCountEl.classList.add('text-primary');
+                } else {
+                    selectedCountEl.classList.remove('text-primary');
+                    selectedCountEl.classList.add('text-danger');
+                }
+            }
+            
+            // Update button appearance and state without using disabled attribute
+            isButtonEnabled = selectedCount > 0;
+            
+            if (submitBtn) {
+                if (isButtonEnabled) {
+                    submitBtn.classList.remove('btn-submit-disabled');
+                    submitBtn.classList.add('btn-submit');
+                } else {
+                    submitBtn.classList.remove('btn-submit');
+                    submitBtn.classList.add('btn-submit-disabled');
+                }
+            }
+        }
+        
+        // Add click handler for the submit button
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function(e) {
+                console.log("Button clicked. Enabled:", isButtonEnabled);
+                
+                // Check if button is visually enabled
+                if (!isButtonEnabled) {
+                    e.preventDefault();
+                    
+                    // Check if there are playlists with locations
+                    const playlistsWithLocations = document.querySelectorAll('.playlist-checkbox:not([disabled])');
+                    
+                    if (playlistsWithLocations.length === 0) {
+                        showToast('Du hast keine Playlists mit Standorten. Füge zuerst Standorte zu deinen Playlists hinzu.', true);
+                    } else {
+                        showToast('Bitte wähle mindestens eine Playlist aus, um eine Suche zu erstellen.', true);
+                    }
+                } else {
+                    // If button is enabled, submit the form
+                    document.querySelector('form.playlist-form').submit();
                 }
             });
         }
@@ -151,6 +353,58 @@
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', updateOrder);
         });
+        
+        // Initialize
+        updateOrder();
+        
+        // Form validation
+        const form = document.querySelector('form.needs-validation');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                const selectedPlaylists = document.querySelectorAll('.playlist-checkbox:checked');
+                
+                if (selectedPlaylists.length === 0) {
+                    event.preventDefault();
+                    showToast('Bitte wähle mindestens eine Playlist aus, um eine Suche zu erstellen.', true);
+                    return false;
+                }
+                
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    showToast('Bitte fülle alle erforderlichen Felder aus', true);
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        }
+        
+        // Check if any playlists with standorte are available
+        const playlistsWithStandorte = document.querySelectorAll('.playlist-checkbox:not([disabled])');
+        if (playlistsWithStandorte.length === 0 && submitBtn) {
+            // Visually disable button but keep it clickable
+            isButtonEnabled = false;
+            submitBtn.classList.remove('btn-submit');
+            submitBtn.classList.add('btn-submit-disabled');
+            
+            if (selectedCountEl) {
+                selectedCountEl.innerHTML = '<span class="text-danger">Keine auswählbaren Playlists vorhanden</span>';
+            }
+        }
     });
 </script>
+
+<style>
+.btn-submit-disabled {
+    background-color: var(--gray-400) !important;
+    color: var(--white);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+</style>
 {% endblock %}

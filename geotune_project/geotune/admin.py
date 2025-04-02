@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from .models import (
     Nutzer, Playlist, Lied, Genre, Standort, 
     NutzerVerbindung, PlaylistLied, NutzerGenrePraeferenz,
-    Suche, SuchePlaylist, NutzerSucheTeilnahme
+    Suche, SuchePlaylist, NutzerSucheTeilnahme, Kommentar
 )
 
 # Benutzerdefinierter UserAdmin
@@ -25,3 +25,4 @@ admin.site.register(NutzerGenrePraeferenz)
 admin.site.register(Suche)
 admin.site.register(SuchePlaylist)
 admin.site.register(NutzerSucheTeilnahme)
+admin.site.register(Kommentar)

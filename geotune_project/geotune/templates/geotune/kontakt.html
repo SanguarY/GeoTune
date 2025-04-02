@@ -1,0 +1,140 @@
+{% extends 'geotune/base.html' %}
+
+{% block title %}Kontakt - GeoTune{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h2 mb-0"><i class="fas fa-envelope me-2"></i>Kontakt</h1>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-4 mb-md-0">
+                            <h2 class="h4 mb-4">Kontaktinformationen</h2>
+                            
+                            <div class="mb-4">
+                                <h3 class="h5"><i class="fas fa-building text-primary me-2"></i>Unternehmen</h3>
+                                <address>
+                                    GeoTune GmbH<br>
+                                    Musterstraße 123<br>
+                                    12345 Berlin<br>
+                                    Deutschland
+                                </address>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h3 class="h5"><i class="fas fa-envelope text-primary me-2"></i>E-Mail</h3>
+                                <p>
+                                    <a href="mailto:info@geotune.de" class="text-decoration-none">info@geotune.de</a>
+                                </p>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h3 class="h5"><i class="fas fa-clock text-primary me-2"></i>Geschäftszeiten</h3>
+                                <p class="mb-1">Montag - Freitag: 9:00 - 17:00 Uhr</p>
+                                <p>Wochenende: Geschlossen</p>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> Wir bemühen uns, alle Anfragen innerhalb von 24 Stunden zu beantworten.
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h2 class="h4 mb-4">Nachricht senden</h2>
+                            
+                            <form>
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Name</label>
+                                    <input type="text" class="form-control" id="name" placeholder="Dein Name">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">E-Mail</label>
+                                    <input type="email" class="form-control" id="email" placeholder="deine.email@beispiel.de">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="betreff" class="form-label">Betreff</label>
+                                    <select class="form-select" id="betreff">
+                                        <option selected disabled>Bitte wählen</option>
+                                        <option>Allgemeine Anfrage</option>
+                                        <option>Technische Unterstützung</option>
+                                        <option>Feedback</option>
+                                        <option>Kooperationsanfrage</option>
+                                        <option>Sonstiges</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="nachricht" class="form-label">Nachricht</label>
+                                    <textarea class="form-control" id="nachricht" rows="5" placeholder="Deine Nachricht..."></textarea>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="datenschutz">
+                                    <label class="form-check-label" for="datenschutz">
+                                        Ich habe die <a href="{% url 'datenschutz' %}">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Daten zu.
+                                    </label>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Nachricht senden
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-5">
+                        <h2 class="h4 mb-4"><i class="fas fa-question-circle text-primary me-2"></i>Häufig gestellte Fragen</h2>
+                        
+                        <div class="accordion" id="faqAccordion">
+                            <div class="accordion-item">
+                                <h3 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                        Wie funktioniert GeoTune?
+                                    </button>
+                                </h3>
+                                <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        GeoTune verbindet Musik mit Orten. Du kannst Playlists an bestimmten Orten entdecken, deine eigenen Playlists erstellen und an Orten hinterlegen, sowie mit anderen Musikliebhabern in Kontakt treten.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h3 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                        Ist GeoTune kostenlos?
+                                    </button>
+                                </h3>
+                                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Ja, GeoTune ist derzeit kostenlos nutzbar. In Zukunft könnten wir Premium-Funktionen einführen, aber die Grundfunktionen bleiben für alle Nutzer kostenlos.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h3 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                        Wie werde ich mein Konto los?
+                                    </button>
+                                </h3>
+                                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Du kannst dein Konto in den Einstellungen deaktivieren oder löschen. Alternativ schreibe uns eine E-Mail an info@geotune.de mit dem Betreff "Kontolöschung".
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}GeoTune - Musik entdecken{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome für Icons -->
@@ -18,7 +22,7 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="{% url 'index' %}">
                 {% load static %}
@@ -27,7 +31,7 @@
                     <span class="ms-2">GeoTune</span>
                 </div>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -40,23 +44,23 @@
                     {% if user.is_authenticated %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'playlists_in_der_naehe' %}">
-                                <i class="fas fa-map-marker-alt"></i> Playlists in der Nähe
+                                <i class="fas fa-map-marker-alt"></i> Playlists
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'nutzer_empfehlungen' %}">
-                                <i class="fas fa-users"></i> Nutzer finden
+                                <i class="fas fa-users"></i> Community
                             </a>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link" href="#" id="navbarDropdown" role="button" 
                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-plus"></i> Erstellen
+                                <i class="fas fa-plus-circle"></i> Erstellen
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 <li>
                                     <a class="dropdown-item" href="{% url 'playlist_erstellen' %}">
-                                        <i class="fas fa-list"></i> Neue Playlist
+                                        <i class="fas fa-music"></i> Neue Playlist
                                     </a>
                                 </li>
                                 <li>
@@ -73,13 +77,15 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'verbindungen' %}">
                                 <i class="fas fa-user-friends"></i> Verbindungen
-                                <span class="badge bg-primary">{{ anzahl_verbindungsanfragen }}</span>
+                                {% if anzahl_verbindungsanfragen > 0 %}
+                                    <span class="badge bg-primary">{{ anzahl_verbindungsanfragen }}</span>
+                                {% endif %}
                             </a>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link" href="#" id="userDropdown" role="button" 
                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user"></i> {{ user.username }}
+                                <i class="fas fa-user-circle"></i> {{ user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <li>
@@ -88,13 +94,14 @@
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
-                                <a class="dropdown-item" href="{% url 'logout' %}" 
-                                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                    <i class="fas fa-sign-out-alt"></i> Abmelden
-                                </a>
-                                <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
-                                    {% csrf_token %}
-                                </form>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'logout' %}" 
+                                       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                        <i class="fas fa-sign-out-alt"></i> Abmelden
+                                    </a>
+                                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
+                                        {% csrf_token %}
+                                    </form>
                                 </li>
                             </ul>
                         </li>
@@ -105,7 +112,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'register' %}">
+                            <a class="btn btn-primary btn-sm ms-2" href="{% url 'register' %}">
                                 <i class="fas fa-user-plus"></i> Registrieren
                             </a>
                         </li>
@@ -133,9 +140,55 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer mt-auto py-3 bg-light">
-        <div class="container text-center">
-            <span class="text-muted">© {% now "Y" %} GeoTune - Entdecke Musik auf neue Weise</span>
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-container">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="{% static 'media/GeoTune_Logo.jpg' %}" alt="GeoTune Logo">
+                        <h3>GeoTune</h3>
+                    </div>
+                    <p class="footer-description">
+                        Entdecke Musik auf eine völlig neue Art. Finde Playlists in deiner Nähe, teile deine Lieblingslieder und verbinde dich mit Gleichgesinnten.
+                    </p>
+                </div>
+                <div class="footer-columns">
+                    <div class="footer-column">
+                        <h5 class="footer-title">Navigation</h5>
+                        <ul class="footer-links">
+                            <li><a href="{% url 'index' %}"><i class="fas fa-angle-right"></i> Start</a></li>
+                            {% if user.is_authenticated %}
+                                <li><a href="{% url 'playlists_in_der_naehe' %}"><i class="fas fa-angle-right"></i> Playlists entdecken</a></li>
+                                <li><a href="{% url 'nutzer_empfehlungen' %}"><i class="fas fa-angle-right"></i> Community</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h5 class="footer-title">Account</h5>
+                        <ul class="footer-links">
+                            {% if user.is_authenticated %}
+                                <li><a href="{% url 'nutzerprofil' %}"><i class="fas fa-angle-right"></i> Mein Profil</a></li>
+                                <li><a href="{% url 'verbindungen' %}"><i class="fas fa-angle-right"></i> Verbindungen</a></li>
+                                <li><a href="{% url 'playlist_erstellen' %}"><i class="fas fa-angle-right"></i> Playlist erstellen</a></li>
+                            {% else %}
+                                <li><a href="{% url 'login' %}"><i class="fas fa-angle-right"></i> Anmelden</a></li>
+                                <li><a href="{% url 'register' %}"><i class="fas fa-angle-right"></i> Registrieren</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <div class="footer-column">
+                        <h5 class="footer-title">Über GeoTune</h5>
+                        <ul class="footer-links">
+                            <li><a href="{% url 'ueber_uns' %}"><i class="fas fa-angle-right"></i> Über uns</a></li>
+                            <li><a href="{% url 'datenschutz' %}"><i class="fas fa-angle-right"></i> Datenschutz</a></li>
+                            <li><a href="{% url 'kontakt' %}"><i class="fas fa-angle-right"></i> Kontakt</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; {% now "Y" %} GeoTune - Entdecke Musik auf neue Weise</p>
+            </div>
         </div>
     </footer>
 

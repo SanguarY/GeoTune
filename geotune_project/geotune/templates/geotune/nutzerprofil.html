@@ -1,136 +1,1653 @@
 {% extends 'geotune/base.html' %}
+{% load custom_filters %}
 
 {% block title %}{{ profil_nutzer.username }} - Profil | GeoTune{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row">
-        <!-- Profil-Header -->
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-2 text-center">
-                            {% if profil_nutzer.profilbild %}
-                                <img src="{{ profil_nutzer.profilbild.url }}" alt="Profilbild" class="rounded-circle img-fluid" style="max-width: 120px;">
-                            {% else %}
-                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px;">
-                                    <i class="fas fa-user fa-4x text-white"></i>
-                                </div>
-                            {% endif %}
+<!-- Add a template-level property for genrevorlieben -->
+{% with genre_list=profil_nutzer.genre_praeferenzen.all %}
+
+<!-- Profile Hero Section -->
+<div class="container-fluid mb-5" style="background: linear-gradient(to right, rgba(var(--primary-rgb), 0.8), rgba(var(--secondary-rgb), 0.6)); padding: 3rem 0; margin-top: -1.5rem; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);">
+    <div class="container">
+            <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                <div class="position-relative d-inline-block">
+                    {% if profil_nutzer.profilbild %}
+                        <img src="{{ profil_nutzer.profilbild.url }}" alt="{{ profil_nutzer.username }}" class="rounded-circle img-thumbnail shadow" style="width: 180px; height: 180px; object-fit: cover; border: 4px solid white;">
+                    {% else %}
+                        <div class="rounded-circle d-flex align-items-center justify-content-center bg-white shadow" style="width: 180px; height: 180px; border: 4px solid white;">
+                            <i class="fas fa-user fa-5x text-primary"></i>
                         </div>
-                        <div class="col-md-7">
-                            <h2>{{ profil_nutzer.username }}</h2>
-                            <p class="text-muted">
-                                {% if profil_nutzer.first_name or profil_nutzer.last_name %}
-                                    {{ profil_nutzer.first_name }} {{ profil_nutzer.last_name }}
-                                {% endif %}
-                            </p>
-                            {% if profil_nutzer.bio %}
-                                <p>{{ profil_nutzer.bio }}</p>
-                            {% endif %}
-                            {% if profil_nutzer.premium_status %}
-                                <span class="badge bg-warning text-dark">Premium</span>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-3 text-end">
-                            {% if not ist_eigenes_profil %}
-                                {% if verbindungsstatus == 'akzeptiert' %}
-                                    <span class="badge bg-success mb-2">Verbunden</span>
-                                {% elif verbindungsstatus == 'angefragt' %}
-                                    <span class="badge bg-warning text-dark mb-2">Anfrage gesendet</span>
-                                {% elif verbindungsstatus == 'blockiert' %}
-                                    <span class="badge bg-danger mb-2">Blockiert</span>
-                                {% else %}
-                                    <a href="{% url 'verbindung_anfordern' profil_nutzer.id %}" class="btn btn-primary mb-2">
-                                        <i class="fas fa-user-plus"></i> Verbindung anfragen
-                                    </a>
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Profil bearbeiten (nur eigenes Profil) -->
-        {% if ist_eigenes_profil %}
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-edit"></i> Profil bearbeiten</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
-                        {% for field in form %}
-                        <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.help_text %}
-                            <small class="form-text text-muted">{{ field.help_text }}</small>
-                            {% endif %}
-                            {% for error in field.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                        {% endfor %}
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Speichern</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
-        <!-- Playlists -->
-        <div class="col-md-{% if ist_eigenes_profil %}8{% else %}12{% endif %}">
-            <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-music"></i> Playlists</h5>
+                    {% endif %}
+                    {% if profil_nutzer.premium_status %}
+                        <span class="position-absolute top-0 end-0 badge bg-accent text-dark p-2 shadow-sm">
+                            <i class="fas fa-crown"></i> Premium
+                        </span>
+                    {% endif %}
                     {% if ist_eigenes_profil %}
-                    <a href="{% url 'playlist_erstellen' %}" class="btn btn-sm btn-light">
-                        <i class="fas fa-plus"></i> Neue Playlist
-                    </a>
+                        <button type="button" class="position-absolute bottom-0 end-0 btn btn-light rounded-circle shadow-sm edit-icon-btn" style="width: 30px; height: 30px;" data-bs-toggle="modal" data-bs-target="#editProfileImageModal">
+                            <i class="fas fa-pencil-alt" style="font-size: 11px; color: #000;"></i>
+                        </button>
                     {% endif %}
                 </div>
-                <div class="card-body">
-                    {% if playlists %}
-                        <div class="row">
-                            {% for playlist in playlists %}
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="card h-100 playlist-card">
-                                    <div class="card-body">
-                                        <h5 class="card-title">{{ playlist.name }}</h5>
-                                        <p class="card-text text-muted small">
-                                            {{ playlist.erstellungsdatum|date:"d.m.Y" }}
-                                            <br>
-                                            {{ playlist.lieder.count }} Lieder
-                                        </p>
-                                        {% if playlist.genres.all %}
-                                        <div class="mb-2">
-                                            {% for genre in playlist.genres.all %}
-                                            <span class="badge bg-secondary">{{ genre.name }}</span>
-                                            {% endfor %}
-                                        </div>
-                                        {% endif %}
-                                        <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-eye"></i> Ansehen
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
+            </div>
+            <div class="col-md-9">
+                <div class="p-3" style="background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: var(--border-radius); border-left: 4px solid var(--accent);">
+                    <h1 class="display-5 text-white fw-bold mb-1">
+                        <i class="fas fa-user-circle me-2"></i>{{ profil_nutzer.username }}
+                    </h1>
+                    {% if profil_nutzer.first_name or profil_nutzer.last_name %}
+                        <p class="text-white mb-2 opacity-75">{{ profil_nutzer.first_name }} {{ profil_nutzer.last_name }}</p>
+                    {% endif %}
+                    
+                    <div class="d-flex flex-wrap mt-3 gap-3">
+                        <div class="d-flex align-items-center bg-primary bg-opacity-50 text-white rounded-pill px-3 py-1">
+                            <i class="fas fa-music me-2"></i> 
+                            <span>{{ playlists|length }} Playlists</span>
                         </div>
-                    {% else %}
-                        <p class="text-muted">Keine Playlists vorhanden.</p>
+                        <div class="d-flex align-items-center bg-primary bg-opacity-50 text-white rounded-pill px-3 py-1">
+                            <i class="fas fa-user-friends me-2"></i> 
+                            <span>{% if profil_nutzer.verbindungen.count > 0 %}{{ profil_nutzer.verbindungen.count }}{% else %}0{% endif %} Verbindungen</span>
+                        </div>
+                        <div class="d-flex align-items-center bg-primary bg-opacity-50 text-white rounded-pill px-3 py-1">
+                            <i class="fas fa-calendar-alt me-2"></i> 
+                            <span>Seit {{ profil_nutzer.date_joined|date:"m.Y" }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if not ist_eigenes_profil %}
+                        <div class="mt-4">
+                        {% if verbindungsstatus == 'akzeptiert' %}
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-success p-2 d-flex align-items-center">
+                                    <i class="fas fa-check me-2"></i> Verbunden
+                                </span>
+                                    <button class="btn btn-outline-light btn-sm">
+                                        <i class="fas fa-user-minus me-1"></i> Verbindung entfernen
+                                </button>
+                            </div>
+                        {% elif verbindungsstatus == 'angefragt' %}
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-warning text-dark p-2 d-flex align-items-center">
+                                    <i class="fas fa-clock me-2"></i> Anfrage gesendet
+                                </span>
+                                    <button class="btn btn-sm" style="background-color: var(--gray-200); color: var(--dark); border: 1px solid var(--gray-300);">
+                                        <i class="fas fa-times me-1"></i> Anfrage zurückziehen
+                                </button>
+                            </div>
+                        {% elif verbindungsstatus == 'blockiert' %}
+                                <span class="badge bg-danger p-2 d-flex align-items-center">
+                                <i class="fas fa-ban me-2"></i> Blockiert
+                            </span>
+                        {% else %}
+                                <a href="{% url 'verbindung_anfordern' profil_nutzer.id %}" class="btn btn-light">
+                                    <i class="fas fa-user-plus me-2"></i> Verbindung anfragen
+                            </a>
+                        {% endif %}
+                        </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Bio Section -->
+{% if profil_nutzer.bio or ist_eigenes_profil %}
+<div class="container mb-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0 d-flex align-items-center justify-content-between text-white">
+                <span><i class="fas fa-comment-alt me-2"></i> Über mich</span>
+                {% if ist_eigenes_profil %}
+                <button type="button" class="btn btn-sm btn-light edit-icon-btn" data-bs-toggle="modal" data-bs-target="#editBioModal">
+                    <i class="fas fa-pencil-alt" style="font-size: 11px; color: #000;"></i>
+                </button>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            {% if profil_nutzer.bio %}
+            <div class="d-flex">
+                <div class="me-3 text-primary">
+                    <i class="fas fa-quote-left fa-2x"></i>
+                </div>
+                <div>
+                    <p class="lead mb-0">{{ profil_nutzer.bio }}</p>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center text-muted">
+                <i class="fas fa-comment-alt fa-2x mb-3 opacity-50"></i>
+                <p>Du hast noch keine Bio hinzugefügt. Klicke auf das Stiftsymbol, um eine Bio hinzuzufügen.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bio Edit Modal -->
+{% if ist_eigenes_profil %}
+<div class="modal fade" id="editBioModal" tabindex="-1" aria-labelledby="editBioModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editBioModalLabel">
+                    <i class="fas fa-comment-alt me-2"></i> Bio bearbeiten
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{% url 'update_bio' %}" id="bioForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">Erzähle etwas über dich</label>
+                        <textarea class="form-control" id="bio" name="bio" rows="5" placeholder="Teile etwas über dich mit anderen Nutzern...">{{ profil_nutzer.bio }}</textarea>
+                    </div>
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn-outline-primary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Abbrechen
+                        </button>
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-save me-2"></i>Bio speichern
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Profile Image Edit Modal -->
+{% if ist_eigenes_profil %}
+<div class="modal fade" id="editProfileImageModal" tabindex="-1" aria-labelledby="editProfileImageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editProfileImageModalLabel">
+                    <i class="fas fa-camera me-2"></i> Profilbild ändern
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{% url 'update_profile_image' %}" enctype="multipart/form-data" id="profileImageForm">
+                    {% csrf_token %}
+                    <div class="text-center mb-4">
+                        <div class="profile-preview-container mx-auto">
+                            {% if profil_nutzer.profilbild %}
+                                <img src="{{ profil_nutzer.profilbild.url }}" alt="{{ profil_nutzer.username }}" class="profile-preview-image">
+                            {% else %}
+                                <div class="profile-preview-placeholder">
+                                    <i class="fas fa-user fa-4x"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="profilbild" class="form-label">Wähle ein neues Profilbild</label>
+                        <input class="form-control" type="file" id="profilbild" name="profilbild" accept="image/*">
+                        <div class="form-text">Empfohlene Größe: Quadratisches Bild (1:1 Verhältnis)</div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn-outline-primary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Abbrechen
+                        </button>
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-save me-2"></i>Profilbild speichern
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Profile Content Tabs -->
+<div class="container mb-5">
+    <ul class="nav nav-tabs custom-tabs" id="profileTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active d-flex align-items-center" id="playlists-tab" data-bs-toggle="tab" data-bs-target="#playlists" type="button" role="tab">
+                <i class="fas fa-music me-2"></i> Playlists
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="genres-tab" data-bs-toggle="tab" data-bs-target="#genres" type="button" role="tab">
+                <i class="fas fa-tags me-2"></i> Genres
+            </button>
+        </li>
+        {% if ist_eigenes_profil %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+                <i class="fas fa-cog me-2"></i> Einstellungen
+            </button>
+        </li>
+        {% else %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">
+                <i class="fas fa-info-circle me-2"></i> Über {{ profil_nutzer.username }}
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+    
+    <div class="tab-content p-4 border border-top-0 rounded-bottom shadow-sm" id="profileTabsContent">
+        <!-- Playlists Tab -->
+        <div class="tab-pane fade show active" id="playlists" role="tabpanel" aria-labelledby="playlists-tab">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    <i class="fas fa-music text-primary me-2"></i> Playlists
+                </h4>
+                {% if ist_eigenes_profil %}
+                <a href="{% url 'playlist_erstellen' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i> Neue Playlist
+                </a>
+                {% endif %}
+            </div>
+            
+                {% if playlists %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        {% for playlist in playlists %}
+                    <div class="col">
+                        <div class="card h-100 card-hoverable border-0 shadow-sm">
+                            {% if playlist.ist_oeffentlich %}
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span class="badge" style="background-color: var(--gray-200); color: var(--gray-800); border: 1px solid var(--gray-300);"><i class="fas fa-globe-europe me-2"></i> Öffentlich</span>
+                                </div>
+                            {% else %}
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span class="badge" style="background-color: var(--gray-200); color: var(--gray-800); border: 1px solid var(--gray-300);"><i class="fas fa-lock me-2"></i> Privat</span>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title mb-3">
+                                    <i class="fas fa-music text-primary me-2"></i>
+                                    {{ playlist.name }}
+                                </h5>
+                                
+                                <div class="row mb-3 g-2">
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-calendar-alt text-primary me-2"></i>
+                                            <small class="text-muted">{{ playlist.erstellungsdatum|date:"d.m.Y" }}</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-music text-primary me-2"></i>
+                                            <small class="text-muted">{{ playlist.lieder.count }} Lieder</small>
+                                        </div>
+                                    </div>
+                                    {% if playlist.standorte.count > 0 %}
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                            <small class="text-muted">{{ playlist.standorte.count }} Standorte</small>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if playlist.genres.all %}
+                                <div class="mb-3 d-flex flex-wrap gap-1">
+                                    {% for genre in playlist.genres.all %}
+                                    <span class="badge" style="background-color: var(--gray-200); color: var(--gray-800); border: 1px solid var(--gray-300);">{{ genre.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                <div class="d-flex align-items-center mt-auto">
+                                    <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-primary btn-sm me-2">
+                                        <i class="fas fa-eye me-1"></i> Ansehen
+                                    </a>
+                                    {% if ist_eigenes_profil %}
+                                    <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-sm d-flex align-items-center justify-content-center" style="background-color: var(--gray-200); color: var(--gray-800); border: 1px solid var(--gray-300); width: 48px; display: flex !important; align-items: center !important; justify-content: center !important; padding: 0.4rem 0 !important;">
+                                        <i class="fas fa-edit" style="margin: 0 !important;"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                <div class="text-center p-5 bg-light rounded">
+                    <div class="mb-3">
+                        <i class="fas fa-music fa-4x text-primary opacity-50"></i>
+                    </div>
+                    <h5>Keine Playlists vorhanden</h5>
+                    <p class="text-muted mb-3">Hier werden die erstellten Playlists angezeigt.</p>
+                    {% if ist_eigenes_profil %}
+                    <a href="{% url 'playlist_erstellen' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i> Erste Playlist erstellen
+                    </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Genres Tab -->
+        <div class="tab-pane fade" id="genres" role="tabpanel" aria-labelledby="genres-tab">
+            <h4 class="mb-4">
+                <i class="fas fa-tags text-primary me-2"></i> Bevorzugte Genres
+            </h4>
+            
+            {% if ist_eigenes_profil %}
+            <form method="post" enctype="multipart/form-data" class="genres-form mb-5" id="genres-form">
+                {% csrf_token %}
+                <!-- Genre-Vorlieben Sektion -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0 d-flex align-items-center">
+                            <i class="fas fa-guitar me-2"></i> Lieblingsgenres auswählen
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="text-muted mb-4">Wähle deine bevorzugten Musikgenres aus, um bessere Playlist-Empfehlungen zu erhalten und passende Musik zu entdecken.</p>
+                        
+                        <div class="genre-selection">
+                            <div class="row row-cols-2 row-cols-md-3 g-2">
+                                {% for field in form %}
+                                {% if field.name == 'genrevorlieben' %}
+                                    {% for checkbox in field %}
+                                    <div class="col">
+                                        <div class="genre-item">
+                                            {{ checkbox.tag }}
+                                            <label for="{{ checkbox.id_for_label }}" class="form-check-label">
+                                                {{ checkbox.choice_label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center justify-content-md-end mt-4">
+                    <button type="submit" name="update_genres" class="btn-submit">
+                        <i class="fas fa-save me-2"></i>Genres speichern
+                    </button>
+                </div>
+            </form>
+            {% else %}
+                {% if genre_list %}
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            {% for genre_praeferenz in genre_list %}
+                                <span class="badge p-2" style="background-color: var(--gray-200); color: var(--gray-800); border: 1px solid var(--gray-300);">{{ genre_praeferenz.genre.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center p-5 bg-light rounded" style="background: linear-gradient(to right, rgba(var(--primary-rgb), 0.02), rgba(var(--primary-rgb), 0.05)) !important;">
+                    <div class="mb-3">
+                        <i class="fas fa-tags fa-4x text-primary opacity-25"></i>
+                    </div>
+                    <h5>Keine Genres gefunden</h5>
+                    <p class="text-muted">Der Nutzer hat keine bevorzugten Musikgenres festgelegt.</p>
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+        
+        <!-- Profile Edit Tab (for own profile only) -->
+        {% if ist_eigenes_profil %}
+        <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+            <h4 class="mb-4">
+                <i class="fas fa-cog text-primary me-2"></i> Einstellungen
+            </h4>
+            
+            <div class="profile-edit-container">
+                <!-- Top Row: Persönliche Daten (Centered) -->
+                <div class="profile-edit-top-row">
+                    <div class="profile-section profile-section-centered">
+                        <div class="card profile-card border-0 shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0 d-flex align-items-center">
+                                    <i class="fas fa-user-circle me-2"></i> Kontodaten
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" enctype="multipart/form-data" class="profile-form" id="profileForm">
+                                    {% csrf_token %}
+                                    
+                                    <!-- Nutzername -->
+                                    <div class="form-floating mb-3">
+                                        <input type="text" name="username" class="form-control" id="id_username" value="{{ profil_nutzer.username }}" required placeholder="Nutzername">
+                                        <label for="id_username">
+                                            <i class="fas fa-user me-1"></i> Nutzername
+                                        </label>
+                                        <div class="form-text">Dein Nutzername wird öffentlich angezeigt.</div>
+                                    </div>
+                                    
+                                    <!-- Persönliche Informationen -->
+                                    <div class="row g-3">
+                                        <!-- Vorname & Nachname in one row -->
+                                        <div class="col-md-6">
+                                            <div class="form-floating mb-3">
+                                                {% for field in form %}
+                                                    {% if field.name == 'first_name' %}
+                                                        {{ field }}
+                                                        <label for="{{ field.id_for_label }}">
+                                                            <i class="fas fa-user-edit me-1"></i> {{ field.label }}
+                                                        </label>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <div class="form-floating mb-3">
+                                                {% for field in form %}
+                                                    {% if field.name == 'last_name' %}
+                                                        {{ field }}
+                                                        <label for="{{ field.id_for_label }}">
+                                                            <i class="fas fa-user-edit me-1"></i> {{ field.label }}
+                                                        </label>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Email -->
+                                        <div class="col-12">
+                                            <div class="form-floating mb-3">
+                                                {% for field in form %}
+                                                    {% if field.name == 'email' %}
+                                                        {{ field }}
+                                                        <label for="{{ field.id_for_label }}">
+                                                            <i class="fas fa-envelope me-1"></i> {{ field.label }}
+                                                        </label>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4 d-flex justify-content-end">
+                                        <button type="submit" name="update_profile" class="btn-submit pulse-animation">
+                                            <i class="fas fa-save me-2"></i>Änderungen speichern
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Row: Left (Passwort ändern) and Right (Account löschen) -->
+                <div class="profile-edit-bottom-row">
+                    <!-- Passwort ändern (Left) -->
+                    <div class="profile-section">
+                        <div class="card profile-card border-0 shadow-sm">
+                            <div class="card-header bg-warning text-white">
+                                <h5 class="mb-0 d-flex align-items-center">
+                                    <i class="fas fa-key me-2"></i> Passwort ändern
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{% url 'password_change' %}" class="password-change-form">
+                                    {% csrf_token %}
+                                    <div class="form-floating mb-3">
+                                        <input type="password" name="old_password" id="id_old_password" class="form-control" required placeholder="Aktuelles Passwort">
+                                        <label for="id_old_password">
+                                            <i class="fas fa-lock me-1"></i> Aktuelles Passwort
+                                        </label>
+                                    </div>
+                                    <div class="form-floating mb-3">
+                                        <input type="password" name="new_password1" id="id_new_password1" class="form-control" required placeholder="Neues Passwort">
+                                        <label for="id_new_password1">
+                                            <i class="fas fa-key me-1"></i> Neues Passwort
+                                        </label>
+                                    </div>
+                                    <div class="form-floating mb-3">
+                                        <input type="password" name="new_password2" id="id_new_password2" class="form-control" required placeholder="Passwort bestätigen">
+                                        <label for="id_new_password2">
+                                            <i class="fas fa-key me-1"></i> Neues Passwort bestätigen
+                                        </label>
+                                    </div>
+                                    <div class="mt-3 d-flex justify-content-end">
+                                        <button type="submit" class="btn-warning" style="background-color: #ffc107 !important; color: black !important;">
+                                            <i class="fas fa-key me-2"></i>Passwort ändern
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Account löschen (Right) -->
+                    <div class="profile-section">
+                        <div class="card profile-card border-0 shadow-sm">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0 d-flex align-items-center">
+                                    <i class="fas fa-trash-alt me-2"></i> Account löschen
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-danger fw-bold mb-4">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Achtung: Dies löscht deinen Account unwiderruflich!
+                                </p>
+                                <p class="text-muted mb-4">
+                                    Wenn du deinen Account löschst, werden alle deine persönlichen Daten, Playlists und Aktivitäten dauerhaft entfernt. Diese Aktion kann nicht rückgängig gemacht werden.
+                                </p>
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                        <i class="fas fa-trash-alt me-2"></i>Account löschen
+                                    </button>
+                                </div>
+                                
+                                <!-- Delete Account Modal -->
+                                <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title" id="deleteAccountModalLabel">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    Account löschen bestätigen
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="text-center mb-4">
+                                                    Bist du sicher, dass du deinen Account löschen möchtest?<br>
+                                                    <span class="text-danger fw-bold">Diese Aktion kann nicht rückgängig gemacht werden!</span>
+                                                </p>
+                                                <form method="post" action="{% url 'delete_account' %}" class="delete-account-form">
+                                                    {% csrf_token %}
+                                                    <div class="mb-3">
+                                                        <label for="password_confirm" class="form-label">Bitte gib dein Passwort ein, um zu bestätigen:</label>
+                                                        <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mt-4">
+                                                        <button type="button" class="btn-outline-primary" data-bs-dismiss="modal">
+                                                            <i class="fas fa-times me-2"></i>Abbrechen
+                                                        </button>
+                                                        <button type="submit" class="btn-danger pulse-animation">
+                                                            <i class="fas fa-trash-alt me-2"></i>Account endgültig löschen
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- About User Tab (for other users' profiles) -->
+        <div class="tab-pane fade" id="about" role="tabpanel" aria-labelledby="about-tab">
+            <h4 class="mb-4">
+                <i class="fas fa-info-circle text-primary me-2"></i> Über {{ profil_nutzer.username }}
+            </h4>
+            
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0 d-flex align-items-center">
+                                <i class="fas fa-id-card me-2"></i> Account-Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-user-circle text-primary me-2"></i> 
+                                    <strong>Nutzername</strong>
+                                </div>
+                                <p class="ms-4 text-muted">{{ profil_nutzer.username }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-calendar-alt text-primary me-2"></i> 
+                                    <strong>Beigetreten</strong>
+                                </div>
+                                <p class="ms-4 text-muted">{{ profil_nutzer.date_joined|date:"d.m.Y" }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-music text-primary me-2"></i> 
+                                    <strong>Anzahl Playlists</strong>
+                                </div>
+                                <p class="ms-4 text-muted">{{ playlists|length }} Playlists</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-users text-primary me-2"></i> 
+                                    <strong>Verbindungen</strong>
+                                </div>
+                                <p class="ms-4 text-muted">{% if profil_nutzer.verbindungen.count > 0 %}{{ profil_nutzer.verbindungen.count }}{% else %}0{% endif %} Verbindungen</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if shared_playlists %}
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0 d-flex align-items-center">
+                                <i class="fas fa-folder-open me-2"></i> Gemeinsame Playlists
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">Ihr teilt {{ shared_playlists|length }} Playlists:</p>
+                            
+                            <ul class="list-group list-group-flush">
+                                {% for playlist in shared_playlists|slice:":5" %}
+                                <li class="list-group-item border-0 bg-transparent px-0">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-music text-primary me-2"></i>
+                                        <a href="{% url 'playlist_detail' playlist.id %}" class="text-decoration-none">
+                                            {{ playlist.name }}
+                                        </a>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                                {% if shared_playlists|length > 5 %}
+                                <li class="list-group-item border-0 bg-transparent px-0 text-center">
+                                    <span class="badge bg-secondary">+{{ shared_playlists|length|add:"-5" }} weitere</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endwith %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom Tabs Styling */
+    .custom-tabs {
+        border-bottom: 1px solid rgba(var(--primary-rgb), 0.2);
+        background-color: var(--accent);
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        padding: 0.5rem 0.5rem 0 0.5rem;
+    }
+    
+    .custom-tabs .nav-link {
+        color: var(--dark);
+        border: none;
+        padding: 0.75rem 1.25rem;
+        font-weight: 500;
+        position: relative;
+        background-color: rgba(255, 255, 255, 0.85);
+        transition: var(--transition);
+        margin-right: 0.25rem;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+    
+    .custom-tabs .nav-link::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 3px;
+        background-color: var(--primary);
+        transition: var(--transition);
+    }
+    
+    .custom-tabs .nav-link:hover {
+        color: var(--primary);
+        background-color: white;
+        border-color: transparent;
+    }
+    
+    .custom-tabs .nav-link:hover::after {
+        width: 30%;
+    }
+    
+    .custom-tabs .nav-link.active {
+        color: var(--primary);
+        background-color: white;
+        border-color: transparent;
+    }
+    
+    .custom-tabs .nav-link.active::after {
+        width: 100%;
+    }
+    
+    /* Genre Selection Styling - Modern Version */
+    .genre-selection {
+        background-color: var(--light);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--gray-200);
+    }
+    
+    /* Ensure more consistent sizing for genre items */
+    .genre-selection .row > .col {
+        display: flex;
+    }
+    
+    .genre-item {
+        display: flex;
+        align-items: center;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        background-color: var(--white);
+        margin-bottom: 0.5rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        position: relative;
+        border: 1px solid var(--gray-200);
+        height: 46px;
+        width: 100%;
+        flex: 1;
+        overflow: hidden;
+    }
+    
+    .genre-item:hover {
+        background-color: #f8f9fa;
+        border-color: var(--gray-300);
+        transform: translateY(-2px);
+    }
+    
+    .genre-item input[type="checkbox"] {
+        margin-right: 0.75rem;
+        min-width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--primary);
+        flex-shrink: 0;
+        position: relative;
+        appearance: none;
+        border-radius: 3px;
+        border: 1.5px solid var(--gray-400);
+        background-color: var(--white);
+        transition: all 0.2s ease;
+    }
+    
+    .genre-item input[type="checkbox"]:hover {
+        border-color: var(--primary);
+    }
+    
+    .genre-item input[type="checkbox"]:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+    
+    .genre-item input[type="checkbox"]:checked::after {
+        content: "\f00c";
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 10px;
+        color: white;
+    }
+    
+    .genre-item label {
+        margin-bottom: 0;
+        cursor: pointer;
+        flex-grow: 1;
+        font-weight: 500;
+        color: var(--gray-700);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.9rem;
+    }
+    
+    /* Selected state for genre items */
+    .genre-item input[type="checkbox"]:checked + label {
+        color: var(--primary);
+        font-weight: 600;
+    }
+    
+    .genre-item:has(input[type="checkbox"]:checked) {
+        background-color: rgba(var(--primary-rgb), 0.04);
+        border-color: var(--primary);
+        box-shadow: 0 3px 8px rgba(var(--primary-rgb), 0.1);
+    }
+    
+    /* Improve no genres found display */
+    #genres .text-center.bg-light {
+        border-radius: 20px;
+        padding: 3rem !important;
+    }
+
+    /* Allgemeiner Button-Style für die ganze Profilseite */
+    .btn-submit, .btn-primary {
+        background: linear-gradient(45deg, var(--primary), var(--primary-light));
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 30px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
+        letter-spacing: 0.5px;
+        text-decoration: none;
+    }
+    
+    .btn-submit:hover, .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.4);
+        color: white;
+    }
+    
+    .btn-submit:active, .btn-primary:active {
+        transform: translateY(1px);
+    }
+    
+    /* Genres Tab spezifischer Button */
+    .genres-form .btn-submit {
+        background: var(--primary);
+        padding: 0.7rem 1.8rem;
+        box-shadow: 0 3px 12px rgba(var(--primary-rgb), 0.25);
+        font-size: 0.95rem;
+    }
+    
+    .genres-form .btn-submit:hover {
+        background: linear-gradient(45deg, var(--primary), var(--primary-light));
+        box-shadow: 0 4px 18px rgba(var(--primary-rgb), 0.35);
+    }
+    
+    /* Versionen für kleinere Buttons */
+    .btn-sm {
+        padding: 0.4rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn-outline-primary {
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--primary);
+        box-shadow: none;
+    }
+    
+    .btn-outline-primary:hover {
+        background: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.15);
+    }
+    
+    /* Modernize the card header for genres */
+    .genres-form .card-header {
+        background: linear-gradient(to right, var(--primary), var(--primary-light));
+        color: white !important;
+        border: none;
+        padding: 1rem 1.5rem;
+    }
+    
+    .genres-form .card-header h5 {
+        color: white !important;
+    }
+    
+    /* Modern Profile Edit Styles */
+    .profile-edit-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .profile-edit-top-row {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        padding: 0 0.5rem;
+    }
+    
+    .profile-edit-top-row .card-body {
+        padding: 1.5rem;
+    }
+    
+    @media (min-width: 768px) {
+        .profile-edit-top-row {
+            padding: 0;
+        }
+        
+        .profile-edit-top-row .card-body {
+            padding: 2rem;
+        }
+    }
+    
+    .profile-section-centered {
+        max-width: 800px;
+        width: 100%;
+    }
+    
+    .profile-edit-bottom-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+    
+    .profile-edit-bottom-row .profile-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .profile-edit-bottom-row .card-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .profile-edit-bottom-row form {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .profile-edit-bottom-row .d-flex:last-child {
+        margin-top: auto;
+    }
+    
+    @media (min-width: 992px) {
+        .profile-edit-bottom-row {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    
+    .profile-section {
+        margin-bottom: 0;
+        transition: var(--transition);
+    }
+    
+    .profile-card {
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .profile-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .profile-card .card-header {
+        background: linear-gradient(to right, var(--primary), var(--primary-light));
+        border: none;
+        padding: 1rem 1.5rem;
+    }
+    
+    .profile-card .card-header.bg-warning {
+        background: linear-gradient(to right, var(--warning), var(--warning-light));
+    }
+    
+    .profile-card .card-header.bg-danger {
+        background: linear-gradient(to right, var(--danger), var(--danger-light));
+    }
+    
+    .profile-card .card-body {
+        padding: 1.5rem;
+        background-color: white;
+    }
+    
+    /* Profile Image Styles */
+    .profile-image-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto;
+        border-radius: 50%;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .profile-image-container:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .profile-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .default-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        background-color: var(--primary-light);
+        color: white;
+    }
+    
+    .default-avatar i {
+        font-size: 3rem;
+    }
+    
+    .image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .profile-image-container:hover .image-overlay {
+        opacity: 1;
+    }
+    
+    .image-overlay label {
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+    }
+    
+    .image-overlay input[type="file"] {
+        display: none;
+    }
+    
+    /* Form Styling */
+    .form-floating {
+        position: relative;
+    }
+    
+    .form-floating input,
+    .form-floating textarea {
+        padding: 1rem 0.75rem;
+        height: calc(3.5rem + 2px);
+        line-height: 1.25;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .form-floating textarea {
+        min-height: 100px;
+    }
+    
+    .form-floating input:focus,
+    .form-floating textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
+    }
+    
+    .form-floating label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        padding: 1rem 0.75rem;
+        pointer-events: none;
+        border: 1px solid transparent;
+        transform-origin: 0 0;
+        transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+        color: var(--gray-600);
+    }
+    
+    .form-floating input:focus ~ label,
+    .form-floating input:not(:placeholder-shown) ~ label,
+    .form-floating textarea:focus ~ label,
+    .form-floating textarea:not(:placeholder-shown) ~ label {
+        opacity: 0.65;
+        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+        background-color: white;
+        padding: 0 0.5rem;
+        height: auto;
+    }
+    
+    /* Button Styles */
+    .btn-submit,
+    .btn-warning,
+    .btn-danger,
+    .btn-outline-primary {
+        padding: 0.625rem 1.5rem;
+        font-weight: 500;
+        border-radius: var(--border-radius);
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-warning {
+        background: #ffc107 !important;
+        color: black !important;
+        border: none !important;
+    }
+    
+    .btn-warning:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(255, 193, 7, 0.3);
+        background: #ffca2c !important;
+        color: black !important;
+    }
+    
+    .btn-danger {
+        background: #dc3545 !important;
+        color: white !important;
+        border: none !important;
+    }
+    
+    .btn-danger:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(220, 53, 69, 0.3);
+        background: #e25563 !important;
+        color: white !important;
+    }
+    
+    /* Pulse Animation */
+    .pulse-animation {
+        position: relative;
+    }
+    
+    .pulse-animation::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: var(--border-radius);
+        animation: pulse 2s infinite;
+        opacity: 0;
+        z-index: -1;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.7);
+            opacity: 0.7;
+        }
+        
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 10px rgba(var(--primary-rgb), 0);
+            opacity: 0;
+        }
+        
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0);
+            opacity: 0;
+        }
+    }
+    
+    /* Modal Styling */
+    .modal-content {
+        border: none;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+    
+    .modal-header {
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .btn-close-white {
+        filter: brightness(0) invert(1);
+        opacity: 0.8;
+    }
+    
+    /* Profile Image Preview in Modal */
+    .profile-preview-container {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid var(--gray-200);
+        background-color: var(--light);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+    
+    .profile-preview-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .profile-preview-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--gray-200);
+        color: var(--gray-600);
+    }
+    
+    /* Edit Button Styling */
+    .edit-button {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--white);
+        color: var(--primary);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .edit-button:hover {
+        background-color: var(--primary);
+        color: var(--white);
+        transform: scale(1.1);
+    }
+    
+    /* Bearbeiten-Icon Button */
+    .edit-icon-btn {
+        font-size: 0.8rem;
+        padding: 0 !important;
+        margin-left: 0.5rem;
+        width: 30px;
+        height: 30px;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        line-height: 1;
+        position: relative;
+    }
+    
+    .edit-icon-btn i {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        margin: 0;
+        padding: 0;
+    }
+    
+    .edit-icon-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Im Card-Header */
+    .card-header .edit-icon-btn {
+        opacity: 0.85;
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .card-header .edit-icon-btn:hover {
+        opacity: 1;
+        background-color: white;
+        color: var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tabs
+    const triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button'))
+    triggerTabList.forEach(function(triggerEl) {
+        const tabTrigger = new bootstrap.Tab(triggerEl)
+        triggerEl.addEventListener('click', function(event) {
+            event.preventDefault()
+            tabTrigger.show()
+        })
+    })
+    
+    // If there's a hash in the URL, activate the corresponding tab
+    if (window.location.hash) {
+        const hash = window.location.hash.substring(1);
+        const tab = document.querySelector(`#profileTabs button[data-bs-target="#${hash}"]`);
+        if (tab) {
+            const tabInstance = new bootstrap.Tab(tab);
+            tabInstance.show();
+        }
+    }
+    
+    // Profile Form AJAX Submission
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            // Erstelle ein FormData-Objekt
+            const formData = new FormData(profileForm);
+            formData.append('update_profile', 'true');
+            
+            // AJAX-Request senden
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Erfolgreiche Aktualisierung
+                    
+                    // Aktualisiere den Nutzernamen in der Profilanzeige, falls er geändert wurde
+                    if (data.username) {
+                        const usernameElement = document.querySelector('h1.display-5.text-white.fw-bold');
+                        if (usernameElement) {
+                            usernameElement.innerHTML = `<i class="fas fa-user-circle me-2"></i>${data.username}`;
+                        }
+                    }
+                    
+                    // Aktualisiere den Namen in der Profilanzeige
+                    if (data.first_name || data.last_name) {
+                        const nameElement = document.querySelector('.text-white.mb-2.opacity-75');
+                        if (nameElement) {
+                            nameElement.textContent = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+                        }
+                    }
+                    
+                    // Erfolgsmeldung anzeigen
+                    const alertHtml = `
+                        <div class="alert bg-gray border-0 text-dark alert-dismissible fade show" role="alert" style="background-color: #e9e9e9;">
+                            <i class="fas fa-check-circle me-2" style="color: #E55934 !important;"></i> ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    // Füge die Erfolgsmeldung am Anfang des Tabs ein
+                    const tabContent = document.getElementById('profile');
+                    tabContent.insertAdjacentHTML('afterbegin', alertHtml);
+                    
+                    // Entferne die Meldung nach 5 Sekunden automatisch
+                    setTimeout(() => {
+                        const alert = tabContent.querySelector('.alert');
+                        if (alert) {
+                            alert.classList.remove('show');
+                            setTimeout(() => alert.remove(), 300);
+                        }
+                    }, 5000);
+                } else {
+                    // Fehlermeldung anzeigen
+                    console.error('Fehler beim Speichern der Profildaten:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler beim Senden der Anfrage:', error);
+            });
+        });
+    }
+    
+    // Bio Form AJAX Submission
+    const bioForm = document.getElementById('bioForm');
+    if (bioForm) {
+        bioForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            // Erstelle ein FormData-Objekt
+            const formData = new FormData(bioForm);
+            
+            // AJAX-Request senden
+            fetch(bioForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Bio im Hauptbereich aktualisieren
+                    const bioText = document.querySelector('.card-body .lead');
+                    if (bioText) {
+                        bioText.textContent = data.bio;
+                    }
+                    
+                    // Bio-Container für leere Bio überprüfen
+                    const bioContainer = document.querySelector('.card-body');
+                    if (data.bio && bioContainer.querySelector('.text-center.text-muted')) {
+                        // Leere Bio-Anzeige durch tatsächliche Bio ersetzen
+                        bioContainer.innerHTML = `
+                            <div class="d-flex">
+                                <div class="me-3 text-primary">
+                                    <i class="fas fa-quote-left fa-2x"></i>
+                                </div>
+                                <div>
+                                    <p class="lead mb-0">${data.bio}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else if (!data.bio && !bioContainer.querySelector('.text-center.text-muted')) {
+                        // Bio entfernt, zeige "Keine Bio" an
+                        bioContainer.innerHTML = `
+                            <div class="text-center text-muted">
+                                <i class="fas fa-comment-alt fa-2x mb-3 opacity-50"></i>
+                                <p>Du hast noch keine Bio hinzugefügt. Klicke auf das Stiftsymbol, um eine Bio hinzuzufügen.</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Modal schließen
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editBioModal'));
+                    modal.hide();
+                    
+                    // Erfolgsmeldung anzeigen
+                    const alertHtml = `
+                        <div class="alert bg-gray border-0 text-dark alert-dismissible fade show" role="alert" style="background-color: #e9e9e9;">
+                            <i class="fas fa-check-circle me-2" style="color: #E55934 !important;"></i> ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    // Füge die Erfolgsmeldung über dem Bio-Container ein
+                    document.querySelector('.container.mb-4').insertAdjacentHTML('beforebegin', alertHtml);
+                    
+                    // Entferne die Meldung nach 5 Sekunden automatisch
+                    setTimeout(() => {
+                        const alert = document.querySelector('.alert');
+                        if (alert) {
+                            alert.classList.remove('show');
+                            setTimeout(() => alert.remove(), 300);
+                        }
+                    }, 5000);
+                } else {
+                    // Fehlermeldung anzeigen
+                    console.error('Fehler beim Speichern der Bio:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler beim Senden der Anfrage:', error);
+            });
+        });
+    }
+    
+    // Profile Image Form AJAX Submission
+    const profileImageForm = document.getElementById('profileImageForm');
+    if (profileImageForm) {
+        profileImageForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            // Erstelle ein FormData-Objekt
+            const formData = new FormData(profileImageForm);
+            
+            // AJAX-Request senden
+            fetch(profileImageForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Profilbild im Header aktualisieren
+                    if (data.image_url) {
+                        const profileImages = document.querySelectorAll('.profile-hero img, .rounded-circle.img-thumbnail');
+                        profileImages.forEach(img => {
+                            img.src = data.image_url;
+                        });
+                        
+                        // Placeholder entfernen falls vorhanden
+                        const placeholders = document.querySelectorAll('.rounded-circle.d-flex');
+                        placeholders.forEach(placeholder => {
+                            const container = placeholder.parentElement;
+                            const img = document.createElement('img');
+                            img.src = data.image_url;
+                            img.alt = "Profilbild";
+                            img.className = "rounded-circle img-thumbnail shadow";
+                            img.style = "width: 180px; height: 180px; object-fit: cover; border: 4px solid white;";
+                            container.replaceChild(img, placeholder);
+                        });
+                    }
+                    
+                    // Modal schließen
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileImageModal'));
+                    modal.hide();
+                    
+                    // Erfolgsmeldung anzeigen
+                    const alertHtml = `
+                        <div class="alert bg-gray border-0 text-dark alert-dismissible fade show" role="alert" style="background-color: #e9e9e9;">
+                            <i class="fas fa-check-circle me-2" style="color: #E55934 !important;"></i> ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    // Füge die Erfolgsmeldung am Anfang der Seite ein
+                    document.querySelector('.container-fluid.mb-5').insertAdjacentHTML('beforebegin', alertHtml);
+                    
+                    // Entferne die Meldung nach 5 Sekunden automatisch
+                    setTimeout(() => {
+                        const alert = document.querySelector('.alert');
+                        if (alert) {
+                            alert.classList.remove('show');
+                            setTimeout(() => alert.remove(), 300);
+                        }
+                    }, 5000);
+                } else {
+                    // Fehlermeldung anzeigen
+                    console.error('Fehler beim Speichern des Profilbilds:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler beim Senden der Anfrage:', error);
+            });
+        });
+    }
+    
+    // Genres Form AJAX Submission
+    const genresForm = document.getElementById('genres-form');
+    if (genresForm) {
+        genresForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            // Erstelle ein FormData-Objekt
+            const formData = new FormData(genresForm);
+            formData.append('update_genres', 'true');
+            
+            // AJAX-Request senden
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Erfolgsmeldung anzeigen
+                    const alertHtml = `
+                        <div class="alert bg-gray border-0 text-dark alert-dismissible fade show" role="alert" style="background-color: #e9e9e9;">
+                            <i class="fas fa-check-circle me-2" style="color: #E55934 !important;"></i> ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    // Füge die Erfolgsmeldung am Anfang des Genres-Tabs ein
+                    const genresTab = document.getElementById('genres');
+                    genresTab.insertAdjacentHTML('afterbegin', alertHtml);
+                    
+                    // Entferne die Meldung nach 5 Sekunden automatisch
+                    setTimeout(() => {
+                        const alert = genresTab.querySelector('.alert');
+                        if (alert) {
+                            alert.classList.remove('show');
+                            setTimeout(() => alert.remove(), 300);
+                        }
+                    }, 5000);
+                } else {
+                    // Fehlermeldung anzeigen
+                    console.error('Fehler beim Speichern der Genres:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler beim Senden der Anfrage:', error);
+            });
+        });
+    }
+    
+    // Profilbild Vorschau
+    const profileImageInput = document.getElementById('profilbild');
+    if (profileImageInput) {
+        profileImageInput.addEventListener('change', function() {
+            const previewContainer = document.querySelector('.profile-preview-container');
+            
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    // Entferne altes Vorschaubild oder Placeholder
+                    previewContainer.innerHTML = '';
+                    
+                    // Erstelle neues Vorschaubild
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.classList.add('profile-preview-image');
+                    previewContainer.appendChild(img);
+                }
+                
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    }
+})
+</script>
 {% endblock %}

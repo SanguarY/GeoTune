@@ -3,38 +3,358 @@
 {% block title %}Registrieren - GeoTune{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0"><i class="fas fa-user-plus"></i> Registrieren</h3>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        {% for field in form %}
-                        <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.help_text %}
-                            <small class="form-text text-muted">{{ field.help_text }}</small>
-                            {% endif %}
-                            {% for error in field.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                            {% endfor %}
+<div class="playlist-form-container">
+    <!-- Registration Card -->
+    <div class="playlist-form-card shadow-lg">
+        <div class="playlist-form-header">
+            <h3 class="d-flex align-items-center">
+                <i class="fas fa-user-plus me-3"></i> Bei GeoTune registrieren
+            </h3>
+            <p>Erstelle einen Account und teile deine Musik-Leidenschaft mit der Community!</p>
+        </div>
+        
+        <div class="playlist-form-body">
+            <!-- Introduction Card -->
+            <div class="card mb-4 border-0" style="background-color: rgba(var(--primary-rgb), 0.05);">
+                <div class="card-body p-3">
+                    <div class="d-flex">
+                        <div class="me-3 text-primary">
+                            <i class="fas fa-music fa-2x"></i>
                         </div>
-                        {% endfor %}
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Registrieren</button>
+                        <div>
+                            <h5 class="card-title">Willkommen bei GeoTune!</h5>
+                            <p class="card-text mb-0">Entdecke Musik an verschiedenen Orten, erstelle und teile Playlists und verbinde dich mit Gleichgesinnten. Mit deinem Account kannst du alle Funktionen der Plattform nutzen.</p>
                         </div>
-                    </form>
-                </div>
-                <div class="card-footer bg-light">
-                    <p class="mb-0">Bereits ein Konto? <a href="{% url 'login' %}">Anmelden</a></p>
+                    </div>
                 </div>
             </div>
+            
+            <form method="post" class="playlist-form needs-validation" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                
+                <!-- Nutzer-Grunddaten -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h5 class="form-label">
+                            <i class="fas fa-id-card text-primary me-2"></i> Deine Accountdaten
+                        </h5>
+                    </div>
+                    
+                    <!-- Benutzername -->
+                    <div class="col-md-6 mb-3">
+                        <label for="id_username" class="form-label">
+                            <i class="fas fa-user"></i> Benutzername
+                        </label>
+                        <input type="text" name="username" class="form-control" id="id_username" placeholder="Wähle einen Benutzernamen" required>
+                        <div class="form-text">Wähle einen eindeutigen Benutzernamen.</div>
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- E-Mail -->
+                    <div class="col-md-6 mb-3">
+                        <label for="id_email" class="form-label">
+                            <i class="fas fa-envelope"></i> E-Mail
+                        </label>
+                        <input type="email" name="email" class="form-control" id="id_email" placeholder="deine@email.de" required>
+                        <div class="form-text">Deine E-Mail-Adresse wird für wichtige Benachrichtigungen verwendet.</div>
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Passwort -->
+                    <div class="col-md-6 mb-3">
+                        <label for="id_password1" class="form-label">
+                            <i class="fas fa-lock"></i> Passwort
+                        </label>
+                        <input type="password" name="password1" class="form-control" id="id_password1" placeholder="Passwort wählen" required>
+                        <div class="form-text small">
+                            Das Passwort muss mindestens 8 Zeichen lang sein und darf nicht zu einfach sein.
+                        </div>
+                        {% if form.password1.errors %}
+                            <div class="invalid-feedback d-block">{{ form.password1.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Passwort bestätigen -->
+                    <div class="col-md-6 mb-3">
+                        <label for="id_password2" class="form-label">
+                            <i class="fas fa-lock"></i> Passwort bestätigen
+                        </label>
+                        <input type="password" name="password2" class="form-control" id="id_password2" placeholder="Passwort bestätigen" required>
+                        <div class="form-text">Bitte gib das Passwort zur Bestätigung erneut ein.</div>
+                        {% if form.password2.errors %}
+                            <div class="invalid-feedback d-block">{{ form.password2.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Persönliche Daten -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h5 class="form-label">
+                            <i class="fas fa-user-circle text-primary me-2"></i> Persönliche Daten (optional)
+                        </h5>
+                    </div>
+                    
+                    <!-- Vorname -->
+                    <div class="col-md-6 mb-3">
+                        <label for="id_first_name" class="form-label">
+                            <i class="fas fa-user-edit"></i> Vorname
+                        </label>
+                        <input type="text" name="first_name" class="form-control" id="id_first_name" placeholder="Dein Vorname">
+                        {% if form.first_name.errors %}
+                            <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Nachname -->
+                    <div class="col-md-6 mb-3">
+                        <label for="id_last_name" class="form-label">
+                            <i class="fas fa-user-edit"></i> Nachname
+                        </label>
+                        <input type="text" name="last_name" class="form-control" id="id_last_name" placeholder="Dein Nachname">
+                        {% if form.last_name.errors %}
+                            <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Über mich -->
+                    <div class="col-md-12 mb-3">
+                        <label for="id_bio" class="form-label">
+                            <i class="fas fa-comment"></i> Über mich
+                        </label>
+                        <textarea name="bio" class="form-control" id="id_bio" rows="3" placeholder="Erzähl etwas über dich und deine Musikvorlieben..."></textarea>
+                        <div class="form-text">Erzähle etwas über dich und deine Musikvorlieben.</div>
+                        {% if form.bio.errors %}
+                            <div class="invalid-feedback d-block">{{ form.bio.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Profilbild -->
+                    <div class="col-md-12 mb-3">
+                        <label for="id_profilbild" class="form-label">
+                            <i class="fas fa-camera"></i> Profilbild
+                        </label>
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <div class="profile-preview" style="width: 100px; height: 100px; border-radius: 50%; background-color: var(--gray-200); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user fa-3x text-gray-500" id="default-profile-icon"></i>
+                                    <img id="profile-preview-img" src="#" alt="Profilvorschau" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                </div>
+                            </div>
+                            <div class="col">
+                                <input type="file" name="profilbild" class="form-control" id="id_profilbild">
+                                <div class="form-text">Wähle ein Profilbild (optional).</div>
+                                {% if form.profilbild.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.profilbild.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Genre-Vorlieben -->
+                <div class="mb-4">
+                    <h5 class="form-label d-flex align-items-center mb-3">
+                        <i class="fas fa-guitar text-primary me-2"></i> Deine Lieblingsgenres (optional)
+                    </h5>
+                    <p class="text-muted mb-3">Wähle Genres aus, die dir gefallen, um bessere Musikempfehlungen zu erhalten.</p>
+                    
+                    <div class="visibility-toggle">
+                        <div class="genre-selection">
+                            <div class="row row-cols-2 row-cols-md-3 g-2">
+                                {% for genre in genres %}
+                                <div class="col">
+                                    <div class="genre-item">
+                                        <input type="checkbox" name="genrevorlieben" value="{{ genre.id }}" id="id_genre_{{ genre.id }}" class="form-check-input">
+                                        <label for="id_genre_{{ genre.id }}" class="form-check-label">
+                                            {{ genre.name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="form-text mt-2">
+                            Die ausgewählten Genres helfen uns, dir passende Musik zu empfehlen.
+                        </div>
+                        {% if form.genrevorlieben.errors %}
+                            <div class="invalid-feedback d-block">{{ form.genrevorlieben.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <a href="{% url 'login' %}" class="btn-cancel">
+                        <i class="fas fa-sign-in-alt me-2"></i>Zum Login
+                    </a>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-user-plus me-2"></i>Registrieren
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Preview für Profilbild
+    const profileInput = document.getElementById('id_profilbild');
+    const previewImg = document.getElementById('profile-preview-img');
+    const defaultIcon = document.getElementById('default-profile-icon');
+    
+    profileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+                defaultIcon.style.display = 'none';
+            }
+            
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+    
+    // Style genre checkboxes
+    document.querySelectorAll('.genre-item input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.classList.add('form-check-input');
+    });
+    
+    // Benutzerdefinierte Validierung mit deutschen Fehlermeldungen
+    const form = document.querySelector('.playlist-form');
+    const usernameInput = document.getElementById('id_username');
+    const emailInput = document.getElementById('id_email');
+    const password1Input = document.getElementById('id_password1');
+    const password2Input = document.getElementById('id_password2');
+    
+    // Funktion zum Anzeigen von Fehlermeldungen
+    function showError(input, message) {
+        // Falls bereits ein Fehlermeldungselement existiert, entferne es
+        const existingError = input.parentNode.querySelector('.custom-invalid-feedback');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // Wenn keine Nachricht angegeben, nichts anzeigen
+        if (!message) return;
+        
+        // Fehlermeldung erstellen und anzeigen
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'invalid-feedback d-block custom-invalid-feedback';
+        errorDiv.textContent = message;
+        input.parentNode.appendChild(errorDiv);
+        
+        // Input-Element als ungültig markieren
+        input.classList.add('is-invalid');
+    }
+    
+    // Funktion zum Entfernen von Fehlermeldungen
+    function clearError(input) {
+        const existingError = input.parentNode.querySelector('.custom-invalid-feedback');
+        if (existingError) {
+            existingError.remove();
+        }
+        input.classList.remove('is-invalid');
+    }
+    
+    // Live-Validierung für Benutzernamen
+    usernameInput.addEventListener('blur', function() {
+        if (this.value.trim() === '') {
+            showError(this, 'Bitte gib einen Benutzernamen ein.');
+        } else if (this.value.length < 3) {
+            showError(this, 'Der Benutzername muss mindestens 3 Zeichen lang sein.');
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Live-Validierung für E-Mail
+    emailInput.addEventListener('blur', function() {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (this.value.trim() === '') {
+            showError(this, 'Bitte gib deine E-Mail-Adresse ein.');
+        } else if (!emailRegex.test(this.value)) {
+            showError(this, 'Bitte gib eine gültige E-Mail-Adresse ein.');
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Live-Validierung für Passwort
+    password1Input.addEventListener('blur', function() {
+        if (this.value.trim() === '') {
+            showError(this, 'Bitte gib ein Passwort ein.');
+        } else if (this.value.length < 8) {
+            showError(this, 'Das Passwort muss mindestens 8 Zeichen lang sein.');
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Live-Validierung für Passwortbestätigung
+    password2Input.addEventListener('blur', function() {
+        if (this.value.trim() === '') {
+            showError(this, 'Bitte bestätige dein Passwort.');
+        } else if (this.value !== password1Input.value) {
+            showError(this, 'Die Passwörter stimmen nicht überein.');
+        } else {
+            clearError(this);
+        }
+    });
+    
+    // Validierung beim Absenden des Formulars
+    form.addEventListener('submit', function(event) {
+        let isValid = true;
+        
+        // Benutzername validieren
+        if (usernameInput.value.trim() === '') {
+            showError(usernameInput, 'Bitte gib einen Benutzernamen ein.');
+            isValid = false;
+        } else if (usernameInput.value.length < 3) {
+            showError(usernameInput, 'Der Benutzername muss mindestens 3 Zeichen lang sein.');
+            isValid = false;
+        }
+        
+        // E-Mail validieren
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailInput.value.trim() === '') {
+            showError(emailInput, 'Bitte gib deine E-Mail-Adresse ein.');
+            isValid = false;
+        } else if (!emailRegex.test(emailInput.value)) {
+            showError(emailInput, 'Bitte gib eine gültige E-Mail-Adresse ein.');
+            isValid = false;
+        }
+        
+        // Passwort validieren
+        if (password1Input.value.trim() === '') {
+            showError(password1Input, 'Bitte gib ein Passwort ein.');
+            isValid = false;
+        } else if (password1Input.value.length < 8) {
+            showError(password1Input, 'Das Passwort muss mindestens 8 Zeichen lang sein.');
+            isValid = false;
+        }
+        
+        // Passwortbestätigung validieren
+        if (password2Input.value.trim() === '') {
+            showError(password2Input, 'Bitte bestätige dein Passwort.');
+            isValid = false;
+        } else if (password2Input.value !== password1Input.value) {
+            showError(password2Input, 'Die Passwörter stimmen nicht überein.');
+            isValid = false;
+        }
+        
+        // Wenn nicht gültig, Absenden verhindern
+        if (!isValid) {
+            event.preventDefault();
+        }
+    });
+});
+</script>
 {% endblock %}

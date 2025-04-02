@@ -8,22 +8,142 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import Nutzer
 
 class NutzerCreationForm(UserCreationForm):
+    email = forms.EmailField(
+        required=True,
+        label="E-Mail",
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'deine@email.de'
+        }),
+        error_messages={
+            'required': 'Bitte gib deine E-Mail-Adresse ein.',
+            'invalid': 'Bitte gib eine gültige E-Mail-Adresse ein.'
+        }
+    )
+    
+    first_name = forms.CharField(
+        max_length=30, 
+        required=False,
+        label="Vorname",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Dein Vorname'
+        })
+    )
+    
+    last_name = forms.CharField(
+        max_length=30, 
+        required=False,
+        label="Nachname",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Dein Nachname'
+        })
+    )
+    
+    bio = forms.CharField(
+        required=False,
+        label="Über mich",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Erzähl etwas über dich und deine Musikvorlieben...'
+        })
+    )
+    
+    profilbild = forms.ImageField(
+        required=False,
+        label="Profilbild",
+        widget=forms.FileInput(attrs={
+            'class': 'form-control'
+        })
+    )
+    
+    genrevorlieben = forms.ModelMultipleChoiceField(
+        queryset=Genre.objects.all(),
+        required=False,
+        label="Lieblingsgenres",
+        widget=forms.CheckboxSelectMultiple(attrs={
+            'class': 'genre-checkbox form-check-input'
+        })
+    )
+    
+    error_messages = {
+        'password_mismatch': 'Die beiden Passwörter stimmen nicht überein.',
+    }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Wähle einen Benutzernamen'
+        })
+        self.fields['password1'].widget.attrs.update({
+            'class': 'form-control', 
+            'placeholder': 'Passwort wählen'
+        })
+        self.fields['password2'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Passwort bestätigen'
+        })
+        
+        # Labels in German
+        self.fields['username'].label = "Benutzername"
+        self.fields['password1'].label = "Passwort"
+        self.fields['password2'].label = "Passwort bestätigen"
+        
+        # Custom error messages in German
+        self.fields['username'].error_messages = {
+            'required': 'Bitte gib einen Benutzernamen ein.',
+            'unique': 'Dieser Benutzername ist bereits vergeben.',
+            'invalid': 'Benutzername enthält ungültige Zeichen.'
+        }
+        
+        self.fields['password1'].error_messages = {
+            'required': 'Bitte gib ein Passwort ein.',
+        }
+        
+        self.fields['password2'].error_messages = {
+            'required': 'Bitte bestätige dein Passwort.',
+        }
+    
     class Meta:
         model = Nutzer
-        fields = ['username', 'email', 'password1', 'password2']
+        fields = ['username', 'email', 'first_name', 'last_name', 'bio', 'profilbild', 'password1', 'password2', 'genrevorlieben']
 
 class NutzerProfilForm(forms.ModelForm):
+    genrevorlieben = forms.ModelMultipleChoiceField(
+        queryset=Genre.objects.all(),
+        required=False,
+        label="Lieblingsgenres",
+        widget=forms.CheckboxSelectMultiple(attrs={
+            'class': 'genre-checkbox form-check-input'
+        })
+    )
+    
     class Meta:
         model = Nutzer
         fields = ['first_name', 'last_name', 'email', 'bio', 'profilbild']
         widgets = {
-            'bio': forms.Textarea(attrs={'rows': 3}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Vorname'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nachname'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'E-Mail-Adresse'}),
+            'bio': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Erzähle etwas über dich...'}),
+            'profilbild': forms.FileInput(attrs={'class': 'form-control d-none'}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Vorausgewählte Genres aus den Nutzerpräferenzen laden
+        if self.instance and self.instance.pk:
+            self.initial['genrevorlieben'] = self.instance.genre_praeferenzen.values_list('genre', flat=True)
 
 class PlaylistForm(forms.ModelForm):
     genres = forms.ModelMultipleChoiceField(
         queryset=Genre.objects.all(),
-        widget=forms.CheckboxSelectMultiple,
+        widget=forms.CheckboxSelectMultiple(attrs={
+            'class': 'form-check-input'
+        }),
         required=False
     )
     
@@ -31,7 +151,18 @@ class PlaylistForm(forms.ModelForm):
         model = Playlist
         fields = ['name', 'beschreibung', 'ist_oeffentlich', 'genres']
         widgets = {
-            'beschreibung': forms.Textarea(attrs={'rows': 3}),
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'z.B. Sommer Hits 2023'
+            }),
+            'beschreibung': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Beschreibe deine Playlist...'
+            }),
+            'ist_oeffentlich': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
         }
 
 class LiedForm(forms.ModelForm):

@@ -3,31 +3,188 @@
 
 {% block title %}Playlists in der Nähe - GeoTune{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Complete redesign of the slider with a cleaner approach */
+    .custom-range-container {
+        position: relative;
+        height: 30px;
+        padding: 13px 0;
+        margin: 10px 0;
+    }
+    
+    /* Base track - this will be the gray part */
+    .custom-range-track {
+        position: absolute;
+        height: 4px;
+        left: 0;
+        right: 0;
+        background-color: var(--gray-300);
+        border-radius: 2px;
+    }
+    
+    /* Progress bar - this will overlay the track */
+    .custom-range-progress {
+        position: absolute;
+        height: 4px;
+        left: 0;
+        width: 0;
+        background-color: var(--primary);
+        border-radius: 2px;
+    }
+    
+    /* Hide the default slider styles completely */
+    .custom-range-input {
+        position: absolute;
+        width: 100%;
+        height: 30px;
+        top: 0;
+        margin: 0;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 10;
+    }
+    
+    /* Custom thumb element */
+    .custom-range-thumb {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: var(--primary);
+        top: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        pointer-events: none; /* Let clicks pass through to the real slider */
+        left: 0; /* Will be updated by JS */
+        z-index: 5;
+    }
+    
+    /* Custom alert styles - clean gray style without accents */
+    .alert-custom-info {
+        color: var(--dark);
+        background-color: var(--gray-100);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+    }
+    
+    .alert-custom-info i {
+        color: var(--gray-600);
+        margin-right: 0.5rem;
+    }
+    
+    /* Custom card header styles (similar to feature-card-primary) */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Custom button styles - override Bootstrap's active state */
+    .btn-primary:active,
+    .btn-primary:focus:active {
+        background-color: var(--primary) !important; /* Keep orange */
+        border-color: var(--primary-dark) !important;
+        transform: translateY(1px); /* Subtle "pressed" effect */
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.1) !important; /* Inner shadow instead of blue outline */
+    }
+    
+    /* Remove focus styles completely */
+    .btn-primary:focus,
+    .btn-primary.focus {
+        box-shadow: none !important;
+        border-color: var(--primary) !important;
+    }
+    
+    /* Reset border color when focus is lost or mouse leaves */
+    .btn-primary:not(:active):not(:focus),
+    .btn-primary:hover:not(:active) {
+        border-color: var(--primary) !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Fix map z-index issues */
+    .map-wrapper {
+        position: relative;
+        overflow: hidden;
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+    }
+    
+    .leaflet-container {
+        z-index: 5;
+    }
+    
+    /* Fix map control z-index issues */
+    .leaflet-top,
+    .leaflet-bottom {
+        z-index: 6;
+    }
+    
+    /* Fix popup z-index */
+    .leaflet-popup {
+        z-index: 7;
+    }
+    
+    .sticky-top {
+        z-index: 5; /* Lower than navbar (1000) */
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-md-8">
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="custom-card-header">
                 <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Playlists in der Nähe</h5>
             </div>
             <div class="card-body">
                 <p>Entdecke Playlists, die in deiner Nähe versteckt sind!</p>
                 
-                <div class="alert alert-info">
+                <div class="alert alert-custom-info">
                     <i class="fas fa-info-circle"></i> Bitte erlaube den Standortzugriff, um Playlists in deiner Nähe zu finden.
                 </div>
                 
                 <div class="mb-3">
                     <div class="form-group">
                         <label for="distanceRange" class="form-label">Suchradius: <span id="distanceValue">5</span> km</label>
-                        <input type="range" class="form-range" id="distanceRange" min="1" max="20" value="5">
+                        <div class="custom-range-container">
+                            <div class="custom-range-track"></div>
+                            <div class="custom-range-progress" id="rangeProgress"></div>
+                            <div class="custom-range-thumb" id="rangeThumb"></div>
+                            <input type="range" class="custom-range-input" id="distanceRange" min="1" max="20" value="5">
+                        </div>
                     </div>
                     <button id="findPlaylists" class="btn btn-primary">
                         <i class="fas fa-search-location"></i> Playlists finden
                     </button>
                 </div>
                 
-                <div id="status" class="alert alert-info d-none">
+                <div id="status" class="alert alert-custom-info d-none">
                     Standort wird ermittelt...
                 </div>
                 
@@ -39,12 +196,14 @@
     </div>
     
     <div class="col-md-4">
-        <div class="card sticky-top" style="top: 20px;">
-            <div class="card-header bg-primary text-white">
+        <div class="card sticky-top" style="top: 0;">
+            <div class="custom-card-header">
                 <h5 class="mb-0"><i class="fas fa-map"></i> Karte</h5>
             </div>
             <div class="card-body p-0">
-                <div id="map" style="height: 400px;"></div>
+                <div class="map-wrapper">
+                    <div id="map" style="height: 400px;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -52,10 +211,12 @@
 
 <!-- Playlist-Karten-Template -->
 <template id="playlistCardTemplate">
-    <div class="card mb-3 playlist-card">
+    <div class="card mb-3">
+        <div class="custom-card-header">
+            <h5 class="card-title mb-0"></h5>
+        </div>
         <div class="card-body">
-            <h5 class="card-title"></h5>
-            <p class="card-text distance-text"></p>
+            <p class="card-text distance-text mb-3"></p>
             <a href="#" class="btn btn-primary view-btn">
                 <i class="fas fa-eye"></i> Ansehen
             </a>
@@ -72,8 +233,34 @@
         const resultsDiv = document.getElementById('playlistResults');
         const distanceSlider = document.getElementById('distanceRange');
         const distanceValue = document.getElementById('distanceValue');
+        const rangeProgress = document.getElementById('rangeProgress');
+        const rangeThumb = document.getElementById('rangeThumb');
         const findButton = document.getElementById('findPlaylists');
         const template = document.getElementById('playlistCardTemplate');
+        
+        // Update the custom range slider UI
+        function updateRangeUI() {
+            const value = parseInt(distanceSlider.value);
+            const min = parseInt(distanceSlider.min) || 1;
+            const max = parseInt(distanceSlider.max) || 20;
+            
+            // Ensure values are valid numbers and within range
+            const safeValue = Math.max(min, Math.min(max, value));
+            
+            // Calculate position percentage
+            const percent = ((safeValue - min) / (max - min)) * 100;
+            
+            // Update UI elements
+            rangeProgress.style.width = `${percent}%`;
+            rangeThumb.style.left = `${percent}%`;
+            distanceValue.textContent = safeValue;
+        }
+        
+        // Initialize slider UI
+        updateRangeUI();
+        
+        // Make sure slider is initialized correctly even after page fully loads
+        window.addEventListener('load', updateRangeUI);
         
         // Karte initialisieren
         const map = L.map('map').setView([49.483889, 8.468056], 13); // Mannheim als Standard
@@ -84,14 +271,31 @@
         
         let userMarker;
         let playlistMarkers = [];
+        let searchCircle; // Track the search radius circle
+        let isSearching = false; // Flag to prevent multiple concurrent searches
+        let cachedPosition = null; // Cache for user's position
+        let positionTimestamp = null; // Timestamp of when the position was cached
+        const POSITION_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
         
-        // Distanz-Slider
-        distanceSlider.addEventListener('input', function() {
-            distanceValue.textContent = this.value;
-        });
+        // Function to check if the cached position is still valid
+        function isCachedPositionValid() {
+            return cachedPosition && positionTimestamp && 
+                   (Date.now() - positionTimestamp < POSITION_CACHE_DURATION);
+        }
+        
+        // Distanz-Slider events
+        distanceSlider.addEventListener('input', updateRangeUI);
+        distanceSlider.addEventListener('change', updateRangeUI);
         
         // Playlists suchen
         findButton.addEventListener('click', function() {
+            // Prevent multiple concurrent searches
+            if (isSearching) return;
+            isSearching = true;
+
+            // Remove focus from button after clicking
+            this.blur();
+            
             statusDiv.classList.remove('d-none');
             resultsDiv.innerHTML = '';
             
@@ -99,92 +303,32 @@
             playlistMarkers.forEach(marker => map.removeLayer(marker));
             playlistMarkers = [];
             
+            // Remove previous search circle if it exists
+            if (searchCircle) {
+                map.removeLayer(searchCircle);
+            }
+            
+            // Use cached position if available and still valid
+            if (isCachedPositionValid()) {
+                processPosition(cachedPosition);
+                return;
+            }
+            
             // Standort ermitteln
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     // Erfolgreiche Standortermittlung
                     function(position) {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
+                        // Cache the position
+                        cachedPosition = position;
+                        positionTimestamp = Date.now();
                         
-                        // Karte auf aktuellen Standort zentrieren
-                        map.setView([lat, lng], 13);
-                        
-                        // Benutzermarker
-                        if (userMarker) {
-                            map.removeLayer(userMarker);
-                        }
-                        userMarker = L.marker([lat, lng], {
-                            icon: L.divIcon({
-                                className: 'user-marker',
-                                html: '<i class="fas fa-user position-absolute top-50 start-50 translate-middle text-primary" style="font-size: 24px;"></i>',
-                                iconSize: [40, 40]
-                            })
-                        }).addTo(map);
-                        
-                        // Suchkreis
-                        const radius = distanceSlider.value * 1000; // km zu m
-                        const circle = L.circle([lat, lng], {
-                            radius: radius,
-                            fillColor: '#3388ff',
-                            fillOpacity: 0.1,
-                            color: '#3388ff',
-                            weight: 1
-                        }).addTo(map);
-                        
-                        // Daten an Server senden
-                        fetch('{% url "playlists_in_der_naehe" %}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': getCookie('csrftoken')
-                            },
-                            body: JSON.stringify({
-                                latitude: lat,
-                                longitude: lng,
-                                max_distance: parseInt(distanceSlider.value)
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            statusDiv.classList.add('d-none');
-                            
-                            if (data.playlists.length === 0) {
-                                resultsDiv.innerHTML = '<div class="alert alert-info">Keine Playlists in der Nähe gefunden.</div>';
-                                return;
-                            }
-                            
-                            // Playlists anzeigen
-                            data.playlists.forEach(playlist => {
-                                // Karten-Element erstellen
-                                const clone = template.content.cloneNode(true);
-                                const card = clone.querySelector('.playlist-card');
-                                const title = clone.querySelector('.card-title');
-                                const distance = clone.querySelector('.distance-text');
-                                const viewBtn = clone.querySelector('.view-btn');
-                                
-                                title.textContent = playlist.playlist_name;
-                                distance.textContent = `Entfernung: ${playlist.entfernung} km`;
-                                viewBtn.href = `/playlist/${playlist.playlist_id}/`;
-                                
-                                resultsDiv.appendChild(card);
-                                
-                                // Marker auf der Karte hinzufügen
-                                const marker = L.marker([playlist.standort.lat, playlist.standort.lng])
-                                    .addTo(map)
-                                    .bindPopup(`<b>${playlist.playlist_name}</b><br>Entfernung: ${playlist.entfernung} km<br><a href="/playlist/${playlist.playlist_id}/">Ansehen</a>`);
-                                
-                                playlistMarkers.push(marker);
-                            });
-                        })
-                        .catch(error => {
-                            statusDiv.classList.add('d-none');
-                            resultsDiv.innerHTML = `<div class="alert alert-danger">Fehler beim Abrufen der Playlists: ${error.message}</div>`;
-                        });
+                        processPosition(position);
                     },
                     // Fehler bei der Standortermittlung
                     function(error) {
                         statusDiv.classList.add('d-none');
+                        isSearching = false; // Reset search flag
                         let errorMessage = 'Fehler bei der Standortermittlung.';
                         
                         switch(error.code) {
@@ -199,14 +343,103 @@
                                 break;
                         }
                         
-                        resultsDiv.innerHTML = `<div class="alert alert-danger">${errorMessage}</div>`;
+                        resultsDiv.innerHTML = `<div class="alert alert-custom-info"><i class="fas fa-exclamation-triangle"></i> ${errorMessage}</div>`;
                     }
                 );
             } else {
                 statusDiv.classList.add('d-none');
-                resultsDiv.innerHTML = '<div class="alert alert-danger">Geolocation wird von deinem Browser nicht unterstützt.</div>';
+                isSearching = false; // Reset search flag
+                resultsDiv.innerHTML = '<div class="alert alert-custom-info"><i class="fas fa-exclamation-triangle"></i> Geolocation wird von deinem Browser nicht unterstützt.</div>';
             }
         });
+        
+        // Process position and perform search
+        function processPosition(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Karte auf aktuellen Standort zentrieren
+            // userMarker entfernen falls vorhanden
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+            userMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'user-marker',
+                    html: '<i class="fas fa-user position-absolute top-50 start-50 translate-middle text-primary" style="font-size: 24px;"></i>',
+                    iconSize: [40, 40]
+                })
+            }).addTo(map);
+            
+            // Suchkreis
+            const radius = distanceSlider.value * 1000; // km zu m
+            searchCircle = L.circle([lat, lng], {
+                radius: radius,
+                fillColor: '#E55934', /* Primary color */
+                fillOpacity: 0.1,
+                color: '#E55934', /* Primary color */
+                weight: 1
+            }).addTo(map);
+            
+            // Karte zoom anpassen, um den gesamten Suchradius anzuzeigen
+            // Fitting the bounds with a slight padding
+            map.fitBounds(searchCircle.getBounds(), {
+                padding: [30, 30], // Add some padding (in pixels)
+                maxZoom: 13        // Don't zoom in too close
+            });
+            
+            // Daten an Server senden
+            fetch('{% url "playlists_in_der_naehe" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    latitude: lat,
+                    longitude: lng,
+                    max_distance: parseInt(distanceSlider.value)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                statusDiv.classList.add('d-none');
+                isSearching = false; // Reset search flag
+                
+                if (data.playlists.length === 0) {
+                    resultsDiv.innerHTML = '<div class="alert alert-custom-info"><i class="fas fa-info-circle"></i> Keine Playlists in der Nähe gefunden.</div>';
+                    return;
+                }
+                
+                // Playlists anzeigen
+                data.playlists.forEach(playlist => {
+                    // Karten-Element erstellen
+                    const clone = template.content.cloneNode(true);
+                    const card = clone.querySelector('.card');
+                    const title = clone.querySelector('.card-title');
+                    const distance = clone.querySelector('.distance-text');
+                    const viewBtn = clone.querySelector('.view-btn');
+                    
+                    title.textContent = playlist.playlist_name;
+                    distance.textContent = `Entfernung: ${playlist.entfernung} km`;
+                    viewBtn.href = `/playlist/${playlist.playlist_id}/`;
+                    
+                    resultsDiv.appendChild(card);
+                    
+                    // Marker auf der Karte hinzufügen
+                    const marker = L.marker([playlist.standort.lat, playlist.standort.lng])
+                        .addTo(map)
+                        .bindPopup(`<b>${playlist.playlist_name}</b><br>Entfernung: ${playlist.entfernung} km<br><a href="/playlist/${playlist.playlist_id}/">Ansehen</a>`);
+                    
+                    playlistMarkers.push(marker);
+                });
+            })
+            .catch(error => {
+                statusDiv.classList.add('d-none');
+                isSearching = false; // Reset search flag
+                resultsDiv.innerHTML = `<div class="alert alert-custom-info"><i class="fas fa-exclamation-triangle"></i> Fehler beim Abrufen der Playlists: ${error.message}</div>`;
+            });
+        }
         
         // CSRF Cookie für POST-Anfragen
         function getCookie(name) {

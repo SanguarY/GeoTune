@@ -135,3 +135,15 @@ class NutzerPlaylistInteraktion(models.Model):
     
     class Meta:
         unique_together = ('nutzer', 'playlist')
+
+class Kommentar(models.Model):
+    playlist = models.ForeignKey(Playlist, on_delete=models.CASCADE, related_name='kommentare')
+    nutzer = models.ForeignKey(Nutzer, on_delete=models.CASCADE, related_name='kommentare')
+    text = models.TextField()
+    erstellungsdatum = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['-erstellungsdatum']
+    
+    def __str__(self):
+        return f"Kommentar von {self.nutzer.username} zu {self.playlist.name}"
