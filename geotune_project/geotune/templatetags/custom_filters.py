@@ -19,6 +19,11 @@ def add(value, arg):
     return value + arg
 
 @register.filter
+def multiply(value, arg):
+    """Multipliziert zwei Zahlen"""
+    return value * arg
+
+@register.filter
 def add_class(field, css_class):
     """Fügt einem Formularfeld eine CSS-Klasse hinzu"""
     return field.as_widget(attrs={"class": css_class})

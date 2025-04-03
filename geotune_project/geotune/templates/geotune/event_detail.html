@@ -1,0 +1,912 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+
+{% block title %}{{ event.name }} | GeoTune{% endblock %}
+
+{% block head %}
+{{ block.super }}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Hero Section Styles */
+    .event-hero {
+        position: relative;
+        background-color: var(--gray-100);
+        border-radius: var(--border-radius);
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .event-hero-content {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    
+    .event-title-container {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+    
+    .event-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-right: 1rem;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+    }
+    
+    .event-badge {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        display: inline-flex;
+        align-items: center;
+        font-weight: 500;
+    }
+    
+    .event-badge i {
+        margin-right: 0.35rem;
+    }
+    
+    .event-badge.upcoming {
+        background-color: var(--primary-100);
+        color: var(--primary);
+    }
+    
+    .event-badge.past {
+        background-color: var(--gray-200);
+        color: var(--gray-600);
+    }
+    
+    .event-meta {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+        gap: 1.5rem;
+    }
+    
+    .event-meta-item {
+        display: flex;
+        align-items: center;
+        color: var(--gray-700);
+        font-size: 0.95rem;
+    }
+    
+    .event-meta-item i {
+        color: var(--primary);
+        margin-right: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .event-meta-item a {
+        color: var(--primary);
+        text-decoration: none;
+    }
+    
+    .event-meta-item a:hover {
+        text-decoration: underline;
+    }
+    
+    .event-description {
+        font-size: 1.1rem;
+        color: var(--gray-700);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+    
+    /* Hero Actions */
+    .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+    
+    .btn-hero {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.6rem 1.25rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-hero i {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-hero.primary {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .btn-hero.primary:hover {
+        background-color: var(--primary-dark);
+    }
+    
+    .btn-hero.edit {
+        background-color: var(--gray-200);
+        color: var(--gray-700);
+    }
+    
+    .btn-hero.edit:hover {
+        background-color: var(--gray-300);
+    }
+    
+    .btn-hero.danger {
+        background-color: var(--danger) !important;
+        color: white !important;
+        border-color: var(--danger) !important;
+    }
+    
+    .btn-hero.danger:hover {
+        background-color: var(--danger-dark) !important;
+        border-color: var(--danger-dark) !important;
+    }
+    
+    .btn-hero.accent {
+        background-color: var(--warning-100);
+        color: var(--warning-700);
+    }
+    
+    .btn-hero.accent:hover {
+        background-color: var(--warning-200);
+    }
+    
+    /* Neuer Hover-Effekt für den "Nicht mehr teilnehmen" Button */
+    .btn-hero.accent[style*="background-color: var(--primary)"] {
+        transition: all 0.2s ease;
+    }
+    
+    .btn-hero.accent[style*="background-color: var(--primary)"]:hover {
+        background-color: var(--primary-dark) !important;
+    }
+    
+    /* CSS stylen für inline styles */
+    button[style*="background-color: var(--primary)"]:hover {
+        background-color: var(--primary-dark) !important;
+    }
+    
+    /* Content Grid */
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2rem;
+    }
+    
+    @media (max-width: 992px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    /* Section Styles */
+    .content-section {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .section-title {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0;
+    }
+    
+    .section-title i {
+        color: var(--primary);
+        font-size: 1.2rem;
+        margin-right: 0.75rem;
+    }
+    
+    .section-title h2 {
+        font-size: 1.35rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--dark);
+    }
+    
+    .section-content {
+        padding: 1.5rem;
+    }
+    
+    /* Sidebar Section */
+    .content-sidebar {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    
+    /* Participant List */
+    .participant-list {
+        padding: 0;
+        margin: 0;
+    }
+    
+    .participant-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+        text-decoration: none;
+        color: var(--dark);
+        transition: background-color 0.2s ease;
+    }
+    
+    .participant-item:last-child {
+        border-bottom: none;
+    }
+    
+    .participant-item:hover {
+        background-color: var(--gray-100);
+    }
+    
+    .participant-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--primary-100);
+        color: var(--primary);
+        font-weight: 600;
+    }
+    
+    .participant-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+    
+    .participant-info {
+        flex: 1;
+    }
+    
+    .participant-name {
+        font-weight: 500;
+        margin: 0;
+    }
+    
+    /* Map */
+    .map-container {
+        height: 250px;
+        width: 100%;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+    }
+    
+    .empty-state-icon {
+        font-size: 2.5rem;
+        color: var(--gray-400);
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+        color: var(--gray-600);
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Action Buttons */
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        font-size: 0.875rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        cursor: pointer;
+    }
+    
+    .btn-action i {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-outline-primary {
+        background-color: transparent;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    /* Playlist List */
+    .playlist-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .playlist-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+        text-decoration: none;
+        color: var(--dark);
+        transition: background-color 0.2s ease;
+    }
+    
+    .playlist-item:last-child {
+        border-bottom: none;
+    }
+    
+    .playlist-item:hover {
+        background-color: var(--gray-100);
+    }
+    
+    .playlist-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        margin-right: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--primary-100);
+        color: var(--primary);
+    }
+    
+    .playlist-info {
+        flex: 1;
+    }
+    
+    .playlist-name {
+        font-weight: 500;
+        margin: 0;
+    }
+    
+    .playlist-songs {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+    
+    .playlist-action {
+        color: var(--gray-500);
+    }
+    
+    /* Specific delete button style to enforce red background */
+    form[action*="loeschen"] .btn-hero {
+        background-color: var(--danger) !important;
+        color: white !important;
+    }
+    
+    form[action*="loeschen"] .btn-hero:hover {
+        background-color: var(--danger-dark) !important;
+    }
+    
+    /* Custom Delete Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .modal-container {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        width: 90%;
+        max-width: 500px;
+        padding: 0;
+        overflow: hidden;
+        animation: modal-appear 0.3s ease-out;
+    }
+    
+    @keyframes modal-appear {
+        from {
+            opacity: 0;
+            transform: translateY(-50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .modal-header {
+        background-color: var(--danger);
+        color: white;
+        padding: 1.25rem;
+        border-top-left-radius: var(--border-radius);
+        border-top-right-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+    }
+    
+    .modal-header i {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 600;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-body p {
+        color: var(--gray-700);
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 0 1.5rem 1.5rem 1.5rem;
+    }
+    
+    .modal-btn {
+        padding: 0.6rem 1.25rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        font-size: 0.95rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .modal-btn.cancel {
+        background-color: var(--gray-200);
+        color: var(--gray-700);
+    }
+    
+    .modal-btn.cancel:hover {
+        background-color: var(--gray-300);
+    }
+    
+    .modal-btn.confirm {
+        background: #dc3545 !important;
+        color: white !important;
+        border: none !important;
+    }
+    
+    .modal-btn.confirm:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(220, 53, 69, 0.3);
+        background: #e25563 !important;
+        color: white !important;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Hero Section -->
+    <section class="event-hero">
+        <div class="event-hero-content">
+            <div class="event-title-container">
+                <h1 class="event-title">{{ event.name }}</h1>
+                {% if event.datum > now %}
+                    <span class="event-badge upcoming">
+                        <i class="fas fa-calendar-check"></i> Anstehend
+                    </span>
+                {% else %}
+                    <span class="event-badge past">
+                        <i class="fas fa-calendar-times"></i> Vergangen
+                    </span>
+                {% endif %}
+            </div>
+            
+            <div class="event-meta">
+                <div class="event-meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>{{ event.datum|date:"d.m.Y H:i" }} Uhr</span>
+                </div>
+                <div class="event-meta-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>{{ event.ort }}</span>
+                </div>
+                <div class="event-meta-item">
+                    <i class="fas fa-user"></i>
+                    <a href="{% url 'nutzerprofil' event.erstellt_von.id %}">
+                        {{ event.erstellt_von.username }}
+                    </a>
+                </div>
+                {% if event.max_teilnehmer %}
+                <div class="event-meta-item">
+                    <i class="fas fa-users"></i>
+                    <span>{{ event.teilnehmer.count }} / {{ event.max_teilnehmer }} Teilnehmer</span>
+                </div>
+                {% else %}
+                <div class="event-meta-item">
+                    <i class="fas fa-users"></i>
+                    <span>{{ event.teilnehmer.count }} Teilnehmer</span>
+                </div>
+                {% endif %}
+                {% if event.partner %}
+                <div class="event-meta-item">
+                    <i class="fas fa-handshake"></i>
+                    <span>{{ event.partner.name }} ({{ event.partner.get_typ_display }})</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <p class="event-description">{{ event.beschreibung|linebreaksbr }}</p>
+            
+            <div class="hero-actions">
+                {% if user.is_authenticated %}
+                    {% if user in event.teilnehmer.all %}
+                        <form method="post" action="{% url 'event_teilnehmen' event.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-hero primary">
+                                <i class="fas fa-calendar-times"></i>Nicht mehr teilnehmen
+                            </button>
+                        </form>
+                    {% else %}
+                        {% if event.max_teilnehmer and event.teilnehmer.count >= event.max_teilnehmer %}
+                            <button type="button" class="btn-hero edit" disabled>
+                                <i class="fas fa-exclamation-circle"></i>Event ausgebucht
+                            </button>
+                        {% else %}
+                            <form method="post" action="{% url 'event_teilnehmen' event.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-hero primary">
+                                    <i class="fas fa-calendar-check"></i>Teilnehmen
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn-hero primary">
+                        <i class="fas fa-sign-in-alt"></i>Anmelden zum Teilnehmen
+                    </a>
+                {% endif %}
+                
+                <a href="{% url 'events' %}" class="btn-hero edit">
+                    <i class="fas fa-arrow-left"></i>Zurück zur Übersicht
+                </a>
+                
+                {% if user == event.erstellt_von %}
+                    <a href="{% url 'event_bearbeiten' event.id %}" class="btn-hero edit">
+                        <i class="fas fa-edit"></i>Bearbeiten
+                    </a>
+                    <button type="button" class="btn-hero danger" id="deleteEventBtn" style="background-color: #dc3545 !important; color: white !important; border-color: #dc3545 !important;">
+                        <i class="fas fa-trash-alt"></i>Löschen
+                    </button>
+                    <form id="deleteEventForm" method="post" action="{% url 'event_loeschen' event.id %}" style="display: none;">
+                        {% csrf_token %}
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="content-grid">
+        <!-- Left Column -->
+        <div class="content-main">
+            <!-- Event Image -->
+            {% if event.bild %}
+            <div class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-image"></i>
+                        <h2>Bild</h2>
+                    </div>
+                </div>
+                <div style="padding: 1rem;">
+                    <img src="{{ event.bild.url }}" class="img-fluid rounded" alt="{{ event.name }}" style="width: 100%; max-height: 500px; object-fit: cover;">
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Event Description -->
+            <div class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-align-left"></i>
+                        <h2>Details</h2>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <h4>Beschreibung</h4>
+                    <p>{{ event.beschreibung|linebreaksbr }}</p>
+                    
+                    <h4 class="mt-4">Datum & Uhrzeit</h4>
+                    <p>{{ event.datum|date:"l, d. F Y" }} um {{ event.datum|date:"H:i" }} Uhr</p>
+                    
+                    <h4 class="mt-4">Ort</h4>
+                    <p>{{ event.ort }}</p>
+                    
+                    {% if event.partner %}
+                    <h4 class="mt-4">Partner</h4>
+                    <p>{{ event.partner.name }} ({{ event.partner.get_typ_display }})</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column (Sidebar) -->
+        <div class="content-sidebar">
+            <!-- Map -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <h2>Veranstaltungsort</h2>
+                    </div>
+                </div>
+                <div class="map-container" id="event-map">
+                    <!-- Here the map would be displayed -->
+                    <div class="empty-state" style="height: 100%;">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-map"></i>
+                        </div>
+                        <h3>Kartenansicht</h3>
+                        <p>Standort: {{ event.ort }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Participants -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-users"></i>
+                        <h2>Teilnehmer</h2>
+                    </div>
+                    {% if event.max_teilnehmer %}
+                    <span class="badge bg-primary rounded-pill">{{ event.teilnehmer.count }} / {{ event.max_teilnehmer }}</span>
+                    {% else %}
+                    <span class="badge bg-primary rounded-pill">{{ event.teilnehmer.count }}</span>
+                    {% endif %}
+                </div>
+                
+                {% if event.teilnehmer.all %}
+                <div class="participant-list">
+                    {% for teilnehmer in event.teilnehmer.all %}
+                    <a href="{% url 'nutzerprofil' teilnehmer.id %}" class="participant-item">
+                        <div class="participant-avatar">
+                            {% if teilnehmer.profilbild %}
+                                <img src="{{ teilnehmer.profilbild.url }}" alt="{{ teilnehmer.username }}">
+                            {% else %}
+                                {{ teilnehmer.username|first|upper }}
+                            {% endif %}
+                        </div>
+                        <div class="participant-info">
+                            <p class="participant-name">{{ teilnehmer.username }}</p>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Keine Teilnehmer</h3>
+                    <p>Sei der Erste, der an diesem Event teilnimmt!</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Event Playlists -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="fas fa-music"></i>
+                        <h2>Event-Playlists</h2>
+                    </div>
+                    {% if event.playlists.all %}
+                    <span class="badge bg-primary rounded-pill">{{ event.playlists.count }}</span>
+                    {% endif %}
+                </div>
+                
+                {% if event.playlists.all %}
+                <div class="playlist-list">
+                    {% for playlist in event.playlists.all %}
+                    <a href="{% url 'playlist_detail' playlist.id %}" class="playlist-item">
+                        <div class="playlist-icon">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <div class="playlist-info">
+                            <p class="playlist-name">{{ playlist.name }}</p>
+                            <p class="playlist-songs">{{ playlist.lieder.count }} Lieder</p>
+                        </div>
+                        <div class="playlist-action">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <h3>Keine Playlists</h3>
+                    <p>Diesem Event sind noch keine Playlists zugeordnet.</p>
+                    
+                    {% if user == event.erstellt_von %}
+                    <a href="{% url 'event_playlist_hinzufuegen' event.id %}" class="btn-outline-primary">
+                        <i class="fas fa-plus"></i> Playlist hinzufügen
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Event löschen</h3>
+        </div>
+        <div class="modal-body">
+            <p>Möchtest du das Event <strong>"{{ event.name }}"</strong> wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="modal-btn cancel" id="cancelDelete">Abbrechen</button>
+            <button type="button" class="modal-btn confirm" id="confirmDelete">Ja, löschen</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Leaflet map
+        const eventMap = L.map('event-map').setView([0, 0], 13);
+        
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(eventMap);
+        
+        // Get location coordinates through geocoding
+        const address = "{{ event.ort }}";
+        
+        if (address) {
+            // For demonstration purposes, let's use a hardcoded location if geocoding fails
+            // This ensures the map always displays something
+            // In a production app, you would have proper geocoding or store coordinates
+            
+            try {
+                // Try to geocode the address with a modified query that might work better
+                const searchQuery = `${address}, Deutschland`;
+                
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const lat = parseFloat(data[0].lat);
+                            const lon = parseFloat(data[0].lon);
+                            
+                            // Update map view with the coordinates
+                            eventMap.setView([lat, lon], 15);
+                            
+                            // Add marker
+                            const marker = L.marker([lat, lon]).addTo(eventMap);
+                            marker.bindPopup(`<b>{{ event.name }}</b><br>{{ event.ort }}`).openPopup();
+                        } else {
+                            // Use a default location (Berlin) if geocoding fails
+                            fallbackToDefaultLocation();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching location data:', error);
+                        fallbackToDefaultLocation();
+                    });
+            } catch (error) {
+                console.error('Error in geocoding:', error);
+                fallbackToDefaultLocation();
+            }
+            
+            // Fallback function to use a default location
+            function fallbackToDefaultLocation() {
+                // Default to Berlin as a fallback
+                const berlinLat = 52.5200;
+                const berlinLon = 13.4050;
+                
+                eventMap.setView([berlinLat, berlinLon], 12);
+                
+                // Add marker with a note about the approximate location
+                const marker = L.marker([berlinLat, berlinLon]).addTo(eventMap);
+                marker.bindPopup(`<b>{{ event.name }}</b><br>Ungefähre Position: Berlin<br><small>Hinweis: Exakte Adresse konnte nicht gefunden werden</small>`).openPopup();
+            }
+        }
+        
+        // Delete modal functionality
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteEventBtn = document.getElementById('deleteEventBtn');
+        const cancelDelete = document.getElementById('cancelDelete');
+        const confirmDelete = document.getElementById('confirmDelete');
+        const deleteEventForm = document.getElementById('deleteEventForm');
+        
+        if (deleteEventBtn) {
+            deleteEventBtn.addEventListener('click', function() {
+                deleteModal.style.display = 'flex';
+            });
+        }
+        
+        if (cancelDelete) {
+            cancelDelete.addEventListener('click', function() {
+                deleteModal.style.display = 'none';
+            });
+        }
+        
+        if (confirmDelete) {
+            confirmDelete.addEventListener('click', function() {
+                deleteEventForm.submit();
+            });
+        }
+        
+        // Close modal when clicking outside
+        deleteModal.addEventListener('click', function(event) {
+            if (event.target === deleteModal) {
+                deleteModal.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %} 

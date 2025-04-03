@@ -165,3 +165,14 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+# Email-Konfiguration (für Entwicklung - Console-Backend)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Im Produktivbetrieb könnte hier ein SMTP-Backend konfiguriert werden:
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.example.com'
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = 'user@example.com'
+# EMAIL_HOST_PASSWORD = 'password'
+# EMAIL_USE_TLS = True
+# DEFAULT_FROM_EMAIL = 'GeoTune <noreply@geotune.example.com>'

@@ -1,0 +1,366 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}{{ geocache.name }} - GeoTune{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom card header styles (similar to feature-card-primary) */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        color: var(--primary);
+        margin-right: 0.15rem;
+    }
+
+    .custom-card-header i:first-child {
+        margin-left: 0.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-title i {
+        margin-right: 0.5rem;
+    }
+    
+    .info-card {
+        border-radius: var(--border-radius);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-card .card-body {
+        padding: 1.25rem;
+    }
+    
+    .info-card p {
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-card p:last-child {
+        margin-bottom: 0;
+    }
+    
+    .info-icon {
+        width: 20px;
+        display: inline-block;
+        text-align: center;
+        margin-right: 0.5rem;
+    }
+    
+    /* Map styling */
+    .map-wrapper {
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--border-radius);
+        width: 100%;
+        height: 300px;
+        margin-bottom: 1rem;
+    }
+    
+    #map {
+        width: 100%;
+        height: 100%;
+        min-height: 300px;
+        border-radius: var(--border-radius);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        position: relative;
+        z-index: 1;  /* Ensure map has a z-index */
+    }
+    
+    /* Custom buttons with orange click effect */
+    .btn-custom {
+        transition: all 0.3s ease;
+        border-radius: 50px;
+        padding: 0.625rem 1.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+    }
+    
+    .btn-custom i {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .btn-custom:active {
+        transform: translateY(0);
+        background-color: var(--primary) !important;
+        border-color: var(--primary-dark) !important;
+        color: white !important;
+        box-shadow: 0 2px 5px rgba(var(--primary-rgb), 0.3) !important;
+    }
+    
+    .btn-custom-outline:active {
+        background-color: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: white !important;
+    }
+    
+    /* Already found button styling */
+    .btn-already-found {
+        background-color: var(--primary) !important;
+        border-color: var(--primary-dark) !important;
+        color: white !important;
+        opacity: 0.9;
+        cursor: default;
+        box-shadow: 0 2px 5px rgba(var(--primary-rgb), 0.2) !important;
+    }
+    
+    .btn-already-found:hover {
+        transform: none !important;
+        box-shadow: 0 2px 5px rgba(var(--primary-rgb), 0.2) !important;
+    }
+    
+    .action-btn {
+        transition: all 0.2s;
+    }
+    
+    /* Fix map z-index issues */
+    .leaflet-container {
+        z-index: 1;
+    }
+    
+    /* Fix map control z-index issues */
+    .leaflet-top,
+    .leaflet-bottom {
+        z-index: 1000;
+    }
+    
+    /* Fix popup z-index */
+    .leaflet-popup {
+        z-index: 1010;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">            
+            <div class="card shadow mb-4">
+                <div class="custom-card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt-fill"></i> 
+                        {{ geocache.name }}
+                    </h5>
+                    <span class="ms-auto badge bg-light text-dark">
+                        Schwierigkeit: {% for i in "12345"|make_list %}{% if forloop.counter <= geocache.schwierigkeit %}<i class="bi bi-star-fill text-dark"></i>{% else %}<i class="bi bi-star text-dark"></i>{% endif %}{% endfor %}
+                    </span>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="section-title"><i class="bi bi-chat-quote"></i> Beschreibung</h5>
+                            <p class="card-text mb-4">{{ geocache.beschreibung }}</p>
+                            
+                            <h5 class="section-title"><i class="bi bi-gift-fill"></i> Belohnung</h5>
+                            <p class="mb-4">
+                                {{ geocache.belohnung }}
+                            </p>
+                            
+                            <h5 class="section-title"><i class="bi bi-person-circle"></i> Erstellt von</h5>
+                            <p class="mb-4">
+                                <a href="{% url 'nutzerprofil' nutzer_id=geocache.erstellt_von.id %}" class="text-decoration-none">
+                                    {{ geocache.erstellt_von.username }}
+                                </a>
+                            </p>
+                            
+                            <h5 class="section-title"><i class="bi bi-people-fill"></i> Finder</h5>
+                            <p class="mb-4">
+                                <span class="badge bg-primary rounded-pill">{{ finder_count }}</span> Nutzer haben diesen Geocache gefunden
+                            </p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="section-title"><i class="bi bi-geo"></i> Standort</h5>
+                            <div class="card info-card mb-4">
+                                <div class="card-body">
+                                    <p><span class="info-icon"><i class="bi bi-geo-alt text-primary"></i></span> <strong>Adresse:</strong> {{ geocache.koordinaten.adresse }}</p>
+                                    <p><span class="info-icon"><i class="bi bi-buildings text-primary"></i></span> <strong>Stadt:</strong> {{ geocache.koordinaten.stadt }}</p>
+                                    <p><span class="info-icon"><i class="bi bi-globe text-primary"></i></span> <strong>Land:</strong> {{ geocache.koordinaten.land }}</p>
+                                    <p class="mb-0"><span class="info-icon"><i class="bi bi-pin-map text-primary"></i></span> <strong>Koordinaten:</strong> 
+                                        {{ geocache.koordinaten.breitengrad }}, {{ geocache.koordinaten.laengengrad }}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="map-wrapper">
+                                <div id="map"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            {% if geocache.erstellt_von == user %}
+                            <a href="{% url 'geocache_bearbeiten' geocache_id=geocache.id %}" class="btn btn-outline-primary btn-custom btn-custom-outline">
+                                <i class="bi bi-pencil"></i> Bearbeiten
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            {% if already_found %}
+                                <button class="btn btn-custom btn-already-found" disabled>
+                                    <i class="bi bi-check-circle-fill"></i> Bereits gefunden
+                                </button>
+                            {% else %}
+                                <button class="btn btn-primary btn-custom" id="btnRegisterFound" data-bs-toggle="modal" data-bs-target="#fundModal">
+                                    <i class="bi bi-geo-alt-fill"></i> Ich habe diesen Geocache gefunden
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fund-Modal -->
+<div class="modal fade" id="fundModal" tabindex="-1" aria-labelledby="fundModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fundModalLabel">Geocache-Fund registrieren</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bist du sicher, dass du diesen Geocache gefunden hast?</p>
+                <p class="text-muted small">
+                    <i class="bi bi-info-circle"></i> 
+                    Du erhältst {{ geocache.schwierigkeit|multiply:10 }} Punkte für das Finden dieses Geocaches.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary btn-custom btn-custom-outline" data-bs-dismiss="modal">Abbrechen</button>
+                <a href="{% url 'geocache_fund_registrieren' geocache_id=geocache.id %}" class="btn btn-primary btn-custom">
+                    <i class="bi bi-check-circle"></i> Ja, ich habe ihn gefunden
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+<script>
+    // Check if Leaflet loaded correctly
+    document.addEventListener("DOMContentLoaded", function() {
+        // Add a small delay to ensure the DOM is fully loaded
+        setTimeout(function() {
+            try {
+                // Check if Leaflet is loaded
+                if (typeof L === 'undefined') {
+                    throw new Error("Leaflet-Bibliothek konnte nicht geladen werden");
+                }
+                
+                console.log("Leaflet loaded successfully");
+                
+                // Get the map container element and check if it exists
+                const mapContainer = document.getElementById('map');
+                if (!mapContainer) {
+                    throw new Error("Map container not found");
+                }
+                
+                // Check if container size is valid
+                const containerWidth = mapContainer.clientWidth;
+                const containerHeight = mapContainer.clientHeight;
+                console.log("Map container size:", containerWidth, "x", containerHeight);
+                
+                if (containerWidth === 0 || containerHeight === 0) {
+                    console.warn("Map container has zero width or height. Attempting to fix...");
+                }
+                
+                console.log("Initializing map with coordinates:", 
+                    "{{ geocache.koordinaten.breitengrad }}", 
+                    "{{ geocache.koordinaten.laengengrad }}");
+                
+                // Check if coordinates are valid
+                const lat = parseFloat("{{ geocache.koordinaten.breitengrad }}".trim());
+                const lng = parseFloat("{{ geocache.koordinaten.laengengrad }}".trim());
+                
+                if (isNaN(lat) || isNaN(lng)) {
+                    throw new Error("Coordinates are not valid numbers: " + 
+                        "{{ geocache.koordinaten.breitengrad }}, {{ geocache.koordinaten.laengengrad }}");
+                }
+                
+                console.log("Validated coordinates:", lat, lng);
+                
+                // Karte erstellen
+                var map = L.map('map').setView([lat, lng], 13);
+                
+                // OpenStreetMap-Layer hinzufügen
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+                
+                // Marker hinzufügen
+                L.marker([lat, lng])
+                    .addTo(map)
+                    .bindPopup('{{ geocache.name }}');
+                    
+                // Force map to recalculate its size after a short delay
+                setTimeout(function() {
+                    map.invalidateSize(true);
+                    console.log("Map size recalculated");
+                }, 300);
+            } catch (error) {
+                console.error("Error initializing map:", error);
+                const mapContainer = document.getElementById('map');
+                if (mapContainer) {
+                    mapContainer.innerHTML = '<div class="alert alert-danger p-3 m-3">' + 
+                        '<i class="bi bi-exclamation-triangle-fill me-2"></i> ' + 
+                        'Die Karte konnte nicht geladen werden: ' + error.message + '</div>';
+                }
+            }
+        }, 100); // Small delay to ensure DOM is ready
+    });
+</script>
+{% endblock %} 

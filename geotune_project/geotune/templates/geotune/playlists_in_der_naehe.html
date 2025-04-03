@@ -1,7 +1,7 @@
 <!-- templates/geotune/playlists_in_der_naehe.html -->
 {% extends 'geotune/base.html' %}
 
-{% block title %}Playlists in der Nähe - GeoTune{% endblock %}
+{% block title %}Musikschätze in der Nähe - GeoTune{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -103,6 +103,49 @@
         color: var(--primary);
     }
     
+    /* Custom buttons with orange theme */
+    .btn-custom {
+        transition: all 0.3s ease;
+        border-radius: 50px;
+        padding: 0.625rem 1.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+    }
+    
+    .btn-custom i {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .btn-custom:active {
+        transform: translateY(0);
+        background-color: var(--primary) !important;
+        border-color: var(--primary-dark) !important;
+        color: white !important;
+        box-shadow: 0 2px 5px rgba(var(--primary-rgb), 0.3) !important;
+    }
+    
+    .btn-custom-outline:active {
+        background-color: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: white !important;
+    }
+    
+    /* Button unable to play yet styling */
+    .btn-play-disabled {
+        background-color: var(--gray-400) !important;
+        border-color: var(--gray-500) !important;
+        color: white !important;
+        opacity: 0.9;
+        cursor: not-allowed;
+    }
+    
     /* Custom button styles - override Bootstrap's active state */
     .btn-primary:active,
     .btn-primary:focus:active {
@@ -152,6 +195,13 @@
     .sticky-top {
         z-index: 5; /* Lower than navbar (1000) */
     }
+    
+    /* Geocache difficulty badges */
+    .badge.bg-1-difficulty { background-color: #28a745 !important; }
+    .badge.bg-2-difficulty { background-color: #17a2b8 !important; }
+    .badge.bg-3-difficulty { background-color: #ffc107 !important; color: #212529; }
+    .badge.bg-4-difficulty { background-color: #fd7e14 !important; }
+    .badge.bg-5-difficulty { background-color: #dc3545 !important; }
 </style>
 {% endblock %}
 
@@ -160,13 +210,28 @@
     <div class="col-md-8">
         <div class="card mb-4">
             <div class="custom-card-header">
-                <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Playlists in der Nähe</h5>
+                <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Musikschätze in der Nähe</h5>
             </div>
             <div class="card-body">
-                <p>Entdecke Playlists, die in deiner Nähe versteckt sind!</p>
+                <p>Entdecke Playlists und Geocaches, die in deiner Nähe versteckt sind!</p>
                 
                 <div class="alert alert-custom-info">
-                    <i class="fas fa-info-circle"></i> Bitte erlaube den Standortzugriff, um Playlists in deiner Nähe zu finden.
+                    <i class="fas fa-info-circle"></i> Bitte erlaube den Standortzugriff, um Musikschätze in deiner Nähe zu finden.
+                </div>
+                
+                <div class="mb-2">
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-info-circle text-primary"></i> Geocaching mit Musik</h5>
+                            <p class="card-text">Bei GeoTune kannst du:</p>
+                            <ul>
+                                <li>Playlists in einem Radius von bis zu 20km <strong>sehen</strong></li>
+                                <li>Musik erst <strong>abspielen</strong>, wenn du näher als 500m bist</li>
+                                <li>Geocaches finden und Punkte sammeln</li>
+                            </ul>
+                            <p class="card-text small">Perfekt für Spaziergänge, Wanderungen oder Stadtausflüge!</p>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="mb-3">
@@ -216,10 +281,16 @@
             <h5 class="card-title mb-0"></h5>
         </div>
         <div class="card-body">
-            <p class="card-text distance-text mb-3"></p>
-            <a href="#" class="btn btn-primary view-btn">
-                <i class="fas fa-eye"></i> Ansehen
-            </a>
+            <p class="card-text distance-text mb-2"></p>
+            <div class="geocache-info mb-3"></div>
+            <div class="d-flex gap-2">
+                <a href="#" class="btn btn-primary btn-custom view-btn">
+                    <i class="fas fa-eye"></i> Ansehen
+                </a>
+                <button class="btn btn-primary btn-custom play-btn" disabled>
+                    <i class="fas fa-play"></i> Abspielen
+                </button>
+            </div>
         </div>
     </div>
 </template>
@@ -389,20 +460,67 @@
             });
             
             // Daten an Server senden
+            console.log('Sending data:', {
+                latitude: lat,
+                longitude: lng,
+                max_distance: parseInt(distanceSlider.value)
+            });
+            
+            const csrf_token = getCookie('csrftoken');
+            if (!csrf_token) {
+                console.error('CSRF token not found. Request may fail.');
+            }
+            
+            const requestData = {
+                latitude: lat,
+                longitude: lng,
+                max_distance: parseInt(distanceSlider.value)
+            };
+            
+            // Verify JSON is valid
+            try {
+                const jsonString = JSON.stringify(requestData);
+                // Parse it back to verify it's valid
+                JSON.parse(jsonString);
+                console.log('JSON data is valid');
+            } catch (e) {
+                console.error('Invalid JSON data:', e);
+                statusDiv.classList.add('d-none');
+                isSearching = false;
+                resultsDiv.innerHTML = `<div class="alert alert-custom-info"><i class="fas fa-exclamation-triangle"></i> Fehler bei der Datenverarbeitung: ${e.message}</div>`;
+                return;
+            }
+            
             fetch('{% url "playlists_in_der_naehe" %}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': csrf_token,
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({
-                    latitude: lat,
-                    longitude: lng,
-                    max_distance: parseInt(distanceSlider.value)
-                })
+                body: JSON.stringify(requestData)
             })
-            .then(response => response.json())
+            .then(response => {
+                // Check if the response is valid before parsing JSON
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error(`Server responded with status ${response.status}:`, text);
+                        try {
+                            // Try to parse as JSON
+                            const errorData = JSON.parse(text);
+                            throw new Error(errorData.error || `Server responded with status ${response.status}`);
+                        } catch (parseError) {
+                            // If not valid JSON, use the raw text
+                            throw new Error(`Server responded with status ${response.status}: ${text}`);
+                        }
+                    });
+                }
+                
+                console.log('Server response received');
+                return response.json();
+            })
             .then(data => {
+                console.log('Successfully parsed response data:', data);
                 statusDiv.classList.add('d-none');
                 isSearching = false; // Reset search flag
                 
@@ -419,10 +537,48 @@
                     const title = clone.querySelector('.card-title');
                     const distance = clone.querySelector('.distance-text');
                     const viewBtn = clone.querySelector('.view-btn');
+                    const playBtn = clone.querySelector('.play-btn');
+                    const geocacheInfo = clone.querySelector('.geocache-info');
                     
                     title.textContent = playlist.playlist_name;
                     distance.textContent = `Entfernung: ${playlist.entfernung} km`;
                     viewBtn.href = `/playlist/${playlist.playlist_id}/`;
+                    
+                    // Check if playlist is playable (within 500m)
+                    if (playlist.is_playable) {
+                        playBtn.disabled = false;
+                        playBtn.innerHTML = '<i class="fas fa-play"></i> Abspielen';
+                        playBtn.href = `/playlist/${playlist.playlist_id}/?play=true`;
+                        playBtn.classList.remove('btn-play-disabled');
+                    } else {
+                        playBtn.disabled = true;
+                        playBtn.innerHTML = '<i class="fas fa-lock"></i> Zu weit entfernt';
+                        playBtn.classList.add('btn-play-disabled');
+                        distance.innerHTML += '<br><small class="text-muted">Du musst näher als 500m sein, um die Musik abzuspielen</small>';
+                    }
+                    
+                    // Display geocache info if present
+                    if (playlist.geocaches && playlist.geocaches.length > 0) {
+                        let geocacheHTML = '<div class="mt-2 mb-2"><h6 class="text-primary"><i class="fas fa-treasure-chest"></i> Geocaches an diesem Ort:</h6><ul class="list-group">';
+                        
+                        playlist.geocaches.forEach(geocache => {
+                            geocacheHTML += `
+                                <li class="list-group-item p-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <strong>${geocache.name}</strong>
+                                            <span class="ms-2 badge bg-${geocache.schwierigkeit}-difficulty">
+                                                ${'★'.repeat(geocache.schwierigkeit)}${'☆'.repeat(5-geocache.schwierigkeit)}
+                                            </span>
+                                        </span>
+                                        <a href="/geocaches/${geocache.id}/" class="btn btn-sm btn-outline-primary">Details</a>
+                                    </div>
+                                </li>`;
+                        });
+                        
+                        geocacheHTML += '</ul></div>';
+                        geocacheInfo.innerHTML = geocacheHTML;
+                    }
                     
                     resultsDiv.appendChild(card);
                     
@@ -435,6 +591,7 @@
                 });
             })
             .catch(error => {
+                console.error('Error fetching playlists:', error);
                 statusDiv.classList.add('d-none');
                 isSearching = false; // Reset search flag
                 resultsDiv.innerHTML = `<div class="alert alert-custom-info"><i class="fas fa-exclamation-triangle"></i> Fehler beim Abrufen der Playlists: ${error.message}</div>`;
@@ -452,6 +609,13 @@
                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                         break;
                     }
+                }
+            }
+            if (!cookieValue && name === 'csrftoken') {
+                // Try to get the token from a meta tag as fallback
+                const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
+                if (csrfTokenElement) {
+                    cookieValue = csrfTokenElement.getAttribute('content');
                 }
             }
             return cookieValue;

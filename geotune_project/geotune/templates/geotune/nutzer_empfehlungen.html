@@ -35,33 +35,51 @@
         color: var(--primary);
     }
     
-    /* User card styles */
+    /* User card styles - enhanced */
     .user-card {
         transition: all 0.3s ease;
-        border-radius: var(--border-radius);
+        border-radius: 15px;
         overflow: hidden;
-        border: 1px solid var(--gray-200);
+        border: none;
+        box-shadow: 0 5px 12px rgba(0, 0, 0, 0.05);
+        background: linear-gradient(to bottom, rgba(var(--color-primary-rgb), 0.03) 0%, rgba(255, 255, 255, 1) 25%);
+        position: relative;
+        height: auto !important;
+        max-height: none;
     }
     
     .user-card:hover {
-        transform: translateY(-5px);
+        transform: translateY(-7px);
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     }
     
+    .user-card .card-body {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
     .user-avatar {
-        width: 80px;
-        height: 80px;
+        width: 90px;
+        height: 90px;
         border-radius: 50%;
         object-fit: cover;
-        border: 3px solid var(--white);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border: 4px solid var(--white);
+        box-shadow: 0 5px 12px rgba(var(--color-primary-rgb), 0.2);
+        transition: transform 0.3s ease;
+        margin: 0 auto;
+    }
+    
+    .user-card:hover .user-avatar {
+        transform: scale(1.05);
     }
     
     .avatar-placeholder {
-        width: 80px;
-        height: 80px;
+        width: 90px;
+        height: 90px;
         border-radius: 50%;
-        background-color: var(--primary);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -69,16 +87,49 @@
         font-weight: bold;
         font-size: 2rem;
         margin: 0 auto;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 5px 12px rgba(var(--color-primary-rgb), 0.2);
+        transition: transform 0.3s ease;
     }
     
+    .user-card:hover .avatar-placeholder {
+        transform: scale(1.05);
+    }
+    
+    .user-card .card-title {
+        margin-top: 0.75rem;
+        font-weight: 600;
+        font-size: 1.3rem;
+        color: var(--dark);
+    }
+    
+    /* Music interests section */
+    .interests-section h6 {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 0.75rem;
+        font-weight: 500;
+        color: var(--gray-700);
+        font-size: 1rem;
+    }
+    
+    .interests-section h6:after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 30px;
+        height: 2px;
+        background-color: var(--primary);
+    }
+    
+    /* Genre badges */
     .genre-badge {
         background-color: rgba(var(--color-primary-rgb), 0.1);
         color: var(--primary);
         border: 1px solid rgba(var(--color-primary-rgb), 0.2);
         border-radius: 30px;
-        padding: 0.25rem 0.75rem;
-        font-size: 0.8rem;
+        padding: 0.25rem 0.75rem 0.25rem 0;
+        font-size: 0.85rem;
         white-space: nowrap;
         display: inline-block;
         margin-bottom: 0.5rem;
@@ -88,19 +139,83 @@
     
     .genre-badge:hover {
         background-color: rgba(var(--color-primary-rgb), 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(var(--color-primary-rgb), 0.1);
+    }
+    
+    /* User stats section */
+    .music-stats {
+        margin-bottom: 1rem;
+        border: 1px solid rgba(var(--color-primary-rgb), 0.1);
+        border-radius: 12px;
+        padding: 0.5rem;
+        background-color: rgba(var(--color-primary-rgb), 0.02);
     }
     
     .user-stat {
         display: flex;
         align-items: center;
         margin-bottom: 0.5rem;
+        border-radius: 8px;
+        background-color: rgba(var(--color-primary-rgb), 0.05);
+        transition: all 0.2s ease;
+    }
+    
+    .user-stat:last-child {
+        margin-bottom: 0;
+    }
+    
+    .user-stat:hover {
+        background-color: rgba(var(--color-primary-rgb), 0.1);
+        transform: translateX(3px);
     }
     
     .user-stat i {
         color: var(--primary);
-        margin-right: 0.5rem;
+        margin-right: 0.6rem;
         width: 20px;
         text-align: center;
+        font-size: 1rem;
+    }
+    
+    .user-stat span {
+        font-weight: 500;
+        font-size: 1rem;
+    }
+    
+    /* Neue Stile für die linksbündige Anordnung */
+    .text-start .interests-section h6 {
+        text-align: left;
+        margin-bottom: 8px;
+    }
+    
+    .text-start .interests-section h6:after {
+        left: 0;
+        margin-left: 0;
+    }
+    
+    .user-stats {
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* User actions section */
+    .user-actions {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        min-height: 40px;
+        text-align: center;
+    }
+    
+    .user-actions a {
+        flex-grow: 0;
+        text-align: center;
+        justify-content: center;
+        width: 45%;
+        display: inline-flex;
     }
     
     /* Custom alert styles - clean gray style */
@@ -119,20 +234,31 @@
     
     /* Button styles to match */
     .btn-custom-primary {
-        background-color: var(--primary);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
         color: var(--white);
-        border: 1px solid rgba(0, 0, 0, 0.1);
+        border: none;
         border-radius: 50px;
-        padding: 0.5rem 1.25rem;
+        padding: 0.5rem 1.75rem 0.5rem 2rem;
         transition: all 0.3s ease;
         font-weight: 500;
+        box-shadow: 0 4px 10px rgba(var(--color-primary-rgb), 0.2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        text-decoration: none;
+        min-width: 110px;
+        min-height: 40px;
     }
     
     .btn-custom-primary:hover {
-        background-color: var(--primary-dark);
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(var(--color-primary-rgb), 0.2);
+        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(var(--color-primary-rgb), 0.3);
         color: var(--white);
+        text-decoration: none;
     }
     
     .btn-custom-outline {
@@ -140,34 +266,113 @@
         color: var(--primary);
         border: 1px solid var(--primary);
         border-radius: 50px;
-        padding: 0.5rem 1.25rem;
+        padding: 0.5rem 1.75rem 0.5rem 2rem;
         transition: all 0.3s ease;
         font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        text-decoration: none;
+        min-width: 110px;
+        min-height: 40px;
     }
     
     .btn-custom-outline:hover {
-        background-color: rgba(var(--color-primary-rgb), 0.1);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(var(--color-primary-rgb), 0.1);
+        background-color: rgba(var(--color-primary-rgb), 0.08);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 10px rgba(var(--color-primary-rgb), 0.1);
+        color: var(--primary-dark);
+        text-decoration: none;
+    }
+    
+    .btn-custom-primary i,
+    .btn-custom-outline i {
+        margin-right: 0.25rem;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
     
     /* Special button for profile edit */
     .profile-edit-btn {
-        background-color: var(--primary);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
         color: var(--white);
-        border: 1px solid rgba(0, 0, 0, 0.1);
+        border: none;
         border-radius: 50px;
-        padding: 0.5rem 1.25rem;
+        padding: 0.6rem 1.75rem 0.6rem 2rem;
         transition: all 0.3s ease;
         font-weight: 500;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(var(--color-primary-rgb), 0.2);
     }
     
     .profile-edit-btn:hover {
-        background-color: var(--primary-dark);
+        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
         transform: translateY(-8px) !important;
         box-shadow: 0 15px 25px rgba(var(--color-primary-rgb), 0.3) !important;
         color: var(--white) !important;
+    }
+    
+    .profile-edit-btn i {
+        margin-right: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Grid spacing adjustments */
+    .g-4 {
+        --bs-gutter-y: 1.5rem;
+        --bs-gutter-x: 1.5rem;
+    }
+    
+    /* Card container shadow enhancement */
+    .card.shadow {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    /* Fixed-width columns for user cards */
+    .user-card-column {
+        width: 100%;
+        margin-bottom: 2.5rem;
+    }
+    
+    @media (min-width: 768px) {
+        .user-card-column {
+            width: calc(50% - 2rem);
+            margin: 0 1rem 2.5rem;
+        }
+    }
+    
+    @media (min-width: 992px) {
+        .user-card-column {
+            width: calc(33.333% - 2rem);
+            margin: 0 1rem 2.5rem;
+        }
+    }
+    
+    /* Zusätzliche Stile für die neue Struktur */
+    .user-info-container {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .user-info-container .user-stats {
+        border: none;
+        background: none;
+        padding: 0;
+    }
+    
+    .user-info-container .user-stat {
+        text-align: left;
+        justify-content: flex-start;
     }
 </style>
 {% endblock %}
@@ -183,12 +388,12 @@
                 </div>
                 <div class="card-body">
                     {% if empfohlene_nutzer %}
-                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        <div class="d-flex flex-wrap justify-content-start">
                         {% for empfehlung in empfohlene_nutzer %}
-                            <div class="col">
+                            <div class="user-card-column">
                                 <div class="card h-100 user-card">
                                     <div class="card-body">
-                                        <div class="text-center mb-3">
+                                        <div class="text-center mb-2">
                                             {% if empfehlung.nutzer.profilbild %}
                                                 <img src="{{ empfehlung.nutzer.profilbild.url }}" alt="{{ empfehlung.nutzer.username }}" class="user-avatar mb-2">
                                             {% else %}
@@ -198,41 +403,43 @@
                                             {% endif %}
                                             <h5 class="card-title">{{ empfehlung.nutzer.username }}</h5>
                                             {% if empfehlung.nutzer.first_name or empfehlung.nutzer.last_name %}
-                                                <p class="text-muted small">{{ empfehlung.nutzer.first_name }} {{ empfehlung.nutzer.last_name }}</p>
+                                                <p class="text-muted small mb-1">{{ empfehlung.nutzer.first_name }} {{ empfehlung.nutzer.last_name }}</p>
                                             {% endif %}
                                         </div>
                                         
-                                        <div class="mb-3">
-                                            <div class="user-stat">
-                                                <i class="fas fa-music"></i>
-                                                <span>{{ empfehlung.playlist_count }} Playlists</span>
+                                        <div class="text-start user-info-container">
+                                            <div class="user-stats">
+                                                <div class="user-stat">
+                                                    <i class="fas fa-music"></i>
+                                                    <span>{{ empfehlung.playlist_count }} Playlists</span>
+                                                </div>
+                                                <div class="user-stat">
+                                                    <i class="fas fa-user-friends"></i>
+                                                    <span>{{ empfehlung.verbindungen_count }} Verbindungen</span>
+                                                </div>
                                             </div>
-                                            <div class="user-stat">
-                                                <i class="fas fa-user-friends"></i>
-                                                <span>{{ empfehlung.verbindungen_count }} Verbindungen</span>
+                                            
+                                            {% if empfehlung.nutzer.genre_praeferenzen.all %}
+                                            <div class="interests-section mb-3">
+                                                <h6 class="text-muted mb-1">Musikinteressen:</h6>
+                                                <div class="d-flex flex-wrap">
+                                                    {% for genre_pref in empfehlung.nutzer.genre_praeferenzen.all|slice:":3" %}
+                                                        <span class="genre-badge">{{ genre_pref.genre.name }}</span>
+                                                    {% endfor %}
+                                                    {% if empfehlung.nutzer.genre_praeferenzen.all.count > 3 %}
+                                                        <span class="genre-badge">+{{ empfehlung.nutzer.genre_praeferenzen.all.count|add:"-3" }}</span>
+                                                    {% endif %}
+                                                </div>
                                             </div>
+                                            {% endif %}
                                         </div>
                                         
-                                        {% if empfehlung.nutzer.genre_praeferenzen.all %}
-                                        <div class="mb-3">
-                                            <h6 class="text-muted small mb-2">Musikinteressen:</h6>
-                                            <div class="d-flex flex-wrap">
-                                                {% for genre_pref in empfehlung.nutzer.genre_praeferenzen.all|slice:":5" %}
-                                                    <span class="genre-badge">{{ genre_pref.genre.name }}</span>
-                                                {% endfor %}
-                                                {% if empfehlung.nutzer.genre_praeferenzen.all.count > 5 %}
-                                                    <span class="genre-badge">+{{ empfehlung.nutzer.genre_praeferenzen.all.count|add:"-5" }}</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                        {% endif %}
-                                        
-                                        <div class="d-flex justify-content-between mt-auto">
+                                        <div class="user-actions d-flex justify-content-center mt-auto">
                                             <a href="{% url 'nutzerprofil' empfehlung.nutzer.id %}" class="btn-custom-primary">
-                                                <i class="fas fa-user me-1"></i> Profil
+                                                <i class="fas fa-user"></i> Profil
                                             </a>
                                             <a href="{% url 'verbindung_anfordern' empfehlung.nutzer.id %}" class="btn-custom-outline">
-                                                <i class="fas fa-user-plus me-1"></i> Verbinden
+                                                <i class="fas fa-user-plus"></i> Verbinden
                                             </a>
                                         </div>
                                     </div>

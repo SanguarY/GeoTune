@@ -1,0 +1,339 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+{% load geotune_extras %}
+
+{% block title %}Playlists zum Event hinzufügen | GeoTune{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom card header styles (wie bei playlists_in_der_naehe) */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h3, 
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Card Styling */
+    .playlist-option {
+        transition: all 0.3s ease;
+        border: 1px solid var(--gray-200);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--border-radius);
+        margin-bottom: 1rem;
+    }
+    
+    .playlist-option:hover {
+        background-color: rgba(var(--color-primary-rgb), 0.03);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .playlist-option.border-primary {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.15);
+    }
+    
+    .playlist-option .card-body {
+        padding: 1rem 1.25rem;
+    }
+    
+    .playlist-option .form-check {
+        padding-left: 0;
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .playlist-option .form-check-input {
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .playlist-option .form-check-label {
+        padding-left: 0.5rem;
+    }
+    
+    .playlist-selection {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Custom alert styles - clean gray style */
+    .alert-custom-info {
+        color: var(--dark);
+        background-color: var(--gray-100);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-custom-info i {
+        color: var(--primary);
+        margin-right: 0.5rem;
+    }
+    
+    /* Form Container */
+    .playlist-form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 0;
+    }
+    
+    .playlist-form-card {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        border: none;
+    }
+    
+    /* Checkbox styling */
+    .form-check-input {
+        cursor: pointer;
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+    
+    /* Button styling */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+        padding: 0.6rem 1.5rem;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary);
+        color: var(--white);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-primary:hover, 
+    .btn-primary:focus {
+        background-color: var(--primary-dark);
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        color: var(--white);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(var(--color-primary-rgb), 0.2);
+    }
+    
+    .btn-outline-secondary {
+        background-color: transparent;
+        color: var(--gray-600);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-outline-secondary:hover,
+    .btn-outline-secondary:focus {
+        background-color: var(--gray-200);
+        color: var(--gray-800);
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Badge styling */
+    .badge.bg-primary {
+        background-color: var(--primary) !important;
+        border-radius: 50px;
+        padding: 0.5em 1em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="playlist-form-container">
+    <div class="playlist-form-card">
+        <div class="custom-card-header">
+            <i class="fas fa-music"></i>
+            <h3>Playlists zum Event "{{ event.name }}" hinzufügen</h3>
+        </div>
+        <div class="card-body p-4">
+            {% if form.playlists %}
+                <form method="post" id="playlistForm">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-4">
+                        <div class="alert-custom-info mb-4">
+                            <i class="fas fa-info-circle"></i> Wähle die Playlists aus, die du diesem Event zuordnen möchtest.
+                        </div>
+                        
+                        {% if form.playlists.errors %}
+                            <div class="alert alert-danger mb-3">
+                                {% for error in form.playlists.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="playlist-selection">
+                            {% for playlist_option in form.playlists %}
+                                <div class="playlist-option">
+                                    <div class="card-body">
+                                        <div class="form-check">
+                                            {{ playlist_option.tag }}
+                                            <label class="form-check-label" for="{{ playlist_option.id_for_label }}">
+                                                <div class="d-flex justify-content-between w-100">
+                                                    <div>
+                                                        <div class="fw-bold">{{ playlist_option.choice_label }}</div>
+                                                        {% if playlist_option.choice_value %}
+                                                        <small class="text-muted">{{ playlist_option.choice_value|get_playlist_info }}</small>
+                                                        {% else %}
+                                                        <small class="text-muted">Keine Informationen verfügbar</small>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="badge bg-primary rounded-pill align-self-center">
+                                                        {% if playlist_option.choice_value %}
+                                                        {{ playlist_option.choice_value|get_playlist_song_count }} Songs
+                                                        {% else %}
+                                                        0 Songs
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Zurück zum Event
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i>Playlists hinzufügen
+                        </button>
+                    </div>
+                </form>
+            {% else %}
+                <div class="alert-custom-info mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-info-circle me-3 fs-4 text-primary"></i>
+                        <h5 class="mb-0">Keine Playlists verfügbar</h5>
+                    </div>
+                    <p class="mb-4">
+                        Du hast noch keine Playlists erstellt, die du diesem Event zuordnen könntest.
+                    </p>
+                    <a href="{% url 'playlist_erstellen' %}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i>Neue Playlist erstellen
+                    </a>
+                </div>
+                
+                <div class="mt-4 text-end">
+                    <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Zurück zum Event
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Checkbox-Styling und Verhalten verbessern
+    document.addEventListener('DOMContentLoaded', function() {
+        const playlistOptions = document.querySelectorAll('.playlist-option');
+        
+        playlistOptions.forEach(option => {
+            const checkbox = option.querySelector('input[type="checkbox"]');
+            
+            // Klick auf gesamte Karte für Checkbox-Toggle
+            option.addEventListener('click', function(e) {
+                // Nicht triggern wenn direkt auf Checkbox geklickt wurde
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    
+                    // Styling für ausgewählte Optionen
+                    if (checkbox.checked) {
+                        option.classList.add('border-primary');
+                        option.style.transform = 'translateY(-3px)';
+                        option.style.boxShadow = '0 5px 15px rgba(var(--primary-rgb), 0.2)';
+                    } else {
+                        option.classList.remove('border-primary');
+                        option.style.transform = '';
+                        option.style.boxShadow = '';
+                    }
+                }
+            });
+            
+            // Initiales Styling für bereits ausgewählte Optionen
+            if (checkbox.checked) {
+                option.classList.add('border-primary');
+                option.style.transform = 'translateY(-3px)';
+                option.style.boxShadow = '0 5px 15px rgba(var(--primary-rgb), 0.2)';
+            }
+            
+            // Hover-Effekte
+            option.addEventListener('mouseenter', function() {
+                if (!checkbox.checked) {
+                    option.style.transform = 'translateY(-2px)';
+                    option.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.05)';
+                }
+            });
+            
+            option.addEventListener('mouseleave', function() {
+                if (!checkbox.checked) {
+                    option.style.transform = '';
+                    option.style.boxShadow = '';
+                }
+            });
+        });
+        
+        // Form-Submission mit Animation
+        const form = document.getElementById('playlistForm');
+        if (form) {
+            form.addEventListener('submit', function() {
+                const submitButton = form.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Wird gespeichert...';
+                    submitButton.disabled = true;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

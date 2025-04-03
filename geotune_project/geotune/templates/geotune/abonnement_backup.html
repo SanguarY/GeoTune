@@ -1,0 +1,523 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+
+{% block title %}Abonnement verwalten | GeoTune{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom card header styles */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h3, 
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Custom modal styles */
+    .custom-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1050;
+        overflow-y: auto;
+    }
+    
+    .custom-modal-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+        padding: 40px 20px;
+    }
+    
+    .custom-modal-content {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        margin: 0 auto;
+    }
+    
+    .custom-modal-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .custom-modal-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .custom-modal-title {
+        margin: 0;
+        color: var(--dark);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    
+    .custom-modal-title i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    .custom-modal-close {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0;
+        color: var(--gray-600);
+    }
+    
+    .custom-modal-body {
+        padding: 1.5rem;
+    }
+    
+    /* Buttons */
+    .btn-outline-primary {
+        color: var(--primary);
+        border-color: var(--primary);
+        background-color: transparent;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .btn-outline-danger {
+        color: #dc3545;
+        border-color: #dc3545;
+        background-color: transparent;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-danger:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+    }
+    
+    /* Pulse Animation */
+    .pulse-animation {
+        position: relative;
+    }
+    
+    .pulse-animation::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: var(--border-radius);
+        animation: pulse 2s infinite;
+        opacity: 0;
+        z-index: -1;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+            opacity: 0.7;
+        }
+        
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+            opacity: 0;
+        }
+        
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            opacity: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="custom-card-header">
+                    <i class="fas fa-crown text-primary"></i>
+                    <h3 class="mb-0">Dein GeoTune Abonnement</h3>
+                </div>
+                <div class="card-body">
+                    {% if user_abo %}
+                        <div class="current-plan mb-4">
+                            <h4>Dein aktuelles Abo: <span class="badge bg-primary">{{ user_abo.get_abo_typ_display }}</span></h4>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p><strong>Startdatum:</strong> {{ user_abo.startdatum|date:"d.m.Y" }}</p>
+                                    {% if user_abo.enddatum %}
+                                        <p><strong>Enddatum:</strong> {{ user_abo.enddatum|date:"d.m.Y" }}</p>
+                                    {% else %}
+                                        <p><strong>Status:</strong> Aktiv</p>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h5>{{ user_abo.preis }} €/Monat</h5>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>Du hast aktuell kein aktives Abonnement.</p>
+                        </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <h4 class="mb-4">Verfügbare Abonnements</h4>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 {% if user_abo.abo_typ == 'basic' %}border-primary{% endif %}">
+                                <div class="card-header text-center bg-light">
+                                    <h5 class="mb-0">Basic</h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h3 class="text-center">0,00 €</h3>
+                                    <p class="text-center text-muted">pro Monat</p>
+                                    <ul class="list-unstyled mt-3">
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Alle öffentlichen Playlists</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Basis-Nutzerprofil</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Teilnahme an Events</li>
+                                    </ul>
+                                    <div class="mt-auto text-center">
+                                        {% if user_abo.abo_typ == 'basic' %}
+                                            <button class="btn btn-primary" disabled>Aktuelles Abo</button>
+                                        {% else %}
+                                            <form method="post" id="basicPlanForm">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="abo_typ" value="basic">
+                                                <button type="submit" class="btn btn-outline-primary">Auswählen</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 {% if user_abo.abo_typ == 'premium' %}border-primary{% endif %}">
+                                <div class="card-header text-center bg-light">
+                                    <h5 class="mb-0">Premium</h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h3 class="text-center">3,99 €</h3>
+                                    <p class="text-center text-muted">pro Monat</p>
+                                    <ul class="list-unstyled mt-3">
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Alles aus Basic</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Unbegrenzte Playlists</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Besondere Musikempfehlungen</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Keine Werbung</li>
+                                    </ul>
+                                    <div class="mt-auto text-center">
+                                        {% if user_abo.abo_typ == 'premium' %}
+                                            <button class="btn btn-primary" disabled>Aktuelles Abo</button>
+                                        {% else %}
+                                            <form method="post" id="premiumPlanForm">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="abo_typ" value="premium">
+                                                <button type="submit" class="btn btn-outline-primary">Auswählen</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 {% if user_abo.abo_typ == 'pro' %}border-primary{% endif %}">
+                                <div class="card-header text-center bg-light">
+                                    <h5 class="mb-0">Professional</h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h3 class="text-center">8,99 €</h3>
+                                    <p class="text-center text-muted">pro Monat</p>
+                                    <ul class="list-unstyled mt-3">
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Alles aus Premium</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Exklusive Events</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Geocaching-Belohnungen</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Playlist-Bearbeitung für Teams</li>
+                                    </ul>
+                                    <div class="mt-auto text-center">
+                                        {% if user_abo.abo_typ == 'pro' %}
+                                            <button class="btn btn-primary" disabled>Aktuelles Abo</button>
+                                        {% else %}
+                                            <form method="post" id="proPlanForm">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="abo_typ" value="pro">
+                                                <button type="submit" class="btn btn-outline-primary">Auswählen</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if user_abo and user_abo.abo_typ != 'basic' %}
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-outline-danger" id="openCancelModalBtn">
+                                <i class="fas fa-times-circle me-2"></i>Abonnement kündigen
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Modal für Abonnement kündigen -->
+{% if user_abo and user_abo.abo_typ != 'basic' %}
+<div id="cancelSubscriptionModal" class="custom-modal-overlay">
+    <div class="custom-modal-container">
+        <div class="custom-modal-content">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Abonnement kündigen
+                </h5>
+                <button type="button" class="custom-modal-close" id="closeModalBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="custom-modal-body">
+                <p class="text-center mb-4">
+                    Bist du sicher, dass du dein {{ user_abo.get_abo_typ_display }}-Abonnement kündigen möchtest?<br>
+                    <span class="text-danger">Dein Zugang zu den Premium-Funktionen endet sofort.</span>
+                </p>
+                <div class="alert alert-secondary mb-4">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-info-circle fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0">Nach der Kündigung wirst du automatisch auf den <strong>Basic-Plan</strong> zurückgestuft, der kostenlos ist.</p>
+                        </div>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'kuendigen_abonnement' %}" class="cancel-subscription-form" id="cancelSubscriptionForm">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn-outline-primary" id="cancelModalBtn">
+                            <i class="fas fa-times me-2"></i>Abbrechen
+                        </button>
+                        <button type="submit" class="btn-danger pulse-animation">
+                            <i class="fas fa-times-circle me-2"></i>Abonnement kündigen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal-Funktionalität
+        const modal = document.getElementById('cancelSubscriptionModal');
+        const openBtn = document.getElementById('openCancelModalBtn');
+        const closeBtn = document.getElementById('closeModalBtn');
+        const cancelBtn = document.getElementById('cancelModalBtn');
+        
+        // Modal schließen (mehrere Möglichkeiten)
+        function closeModal() {
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        if (modal && openBtn && closeBtn && cancelBtn) {
+            // Modal öffnen
+            openBtn.addEventListener('click', function() {
+                modal.style.display = 'block';
+            });
+            
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+            
+            // Klick außerhalb des Modals schließt es
+            modal.addEventListener('click', function(event) {
+                if (event.target === modal || event.target.classList.contains('custom-modal-container')) {
+                    closeModal();
+                }
+            });
+            
+            // Verhindern, dass Klicks auf den Modal-Inhalt das Modal schließen
+            const modalContent = document.querySelector('.custom-modal-content');
+            if (modalContent) {
+                modalContent.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                });
+            }
+        }
+        
+        // Toast-Benachrichtigungssystem
+        function showToast(message, type = 'primary') {
+            // Fallback if Bootstrap is not available
+            if (typeof bootstrap === 'undefined') {
+                alert(message);
+                return;
+            }
+            
+            // Create toast element
+            const toastEl = document.createElement('div');
+            toastEl.className = `toast align-items-center text-white bg-${type}`;
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Add to container
+            const toastContainer = document.querySelector('.toast-container');
+            toastContainer.appendChild(toastEl);
+            
+            // Show toast
+            const toast = new bootstrap.Toast(toastEl, {
+                delay: 5000
+            });
+            toast.show();
+        }
+        
+        // URL-Parameter für Toast-Nachrichten prüfen und History API verwenden
+        // um zu vermeiden, dass die Nachricht bei jedem Neuladen angezeigt wird
+        if (window.performance && window.performance.navigation.type !== window.performance.navigation.TYPE_BACK_FORWARD) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const messageType = urlParams.get('message');
+            
+            if (messageType === 'cancelled') {
+                showToast('Dein Abonnement wurde erfolgreich gekündigt. Du nutzt jetzt den Basic-Plan.', 'success');
+                showToast('Abonnement erfolgreich gekündigt', 'success');
+                // URL ohne Parameter ersetzen, damit die Nachricht nicht erneut angezeigt wird
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (messageType === 'upgraded') {
+                const plan = urlParams.get('plan');
+                const planName = plan === 'premium' ? 'Premium' : (plan === 'pro' ? 'Professional' : 'Basic');
+                showToast(`Dein Abonnement wurde auf ${planName} aktualisiert. Viel Spaß mit den neuen Funktionen!`, 'success');
+                // URL ohne Parameter ersetzen
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // Formular-Handler für Abo-Wechsel
+        const aboPlanForms = [
+            document.getElementById('basicPlanForm'),
+            document.getElementById('premiumPlanForm'),
+            document.getElementById('proPlanForm')
+        ];
+        
+        aboPlanForms.forEach(form => {
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    // Kein Verhindern des Standardverhaltens - die Formulare müssen normal abgesendet werden
+                    // Die Weiterleitungs-URL wird serverseitig mit den Parametern erstellt
+                    
+                    // Übergangsmeldung anzeigen
+                    const planType = this.querySelector('input[name="abo_typ"]').value;
+                    const planName = planType === 'premium' ? 'Premium' : (planType === 'pro' ? 'Professional' : 'Basic');
+                    showToast(`Dein Abonnement wird auf ${planName} aktualisiert...`, 'info');
+                });
+            }
+        });
+        
+        // Kündigung-Formular-Handler
+        const cancelForm = document.getElementById('cancelSubscriptionForm');
+        if (cancelForm) {
+            cancelForm.addEventListener('submit', function(event) {
+                // Kein Verhindern des Standardverhaltens - das Formular muss normal abgesendet werden
+                // Die Weiterleitungs-URL wird serverseitig mit den Parametern erstellt
+                
+                // Übergangsmeldung anzeigen
+                showToast('Deine Kündigung wird bearbeitet...', 'info');
+                closeModal(); // Schließe das Modal nach dem Absenden
+            });
+        }
+    });
+</script>
+{% endblock %}

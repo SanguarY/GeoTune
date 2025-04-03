@@ -20,8 +20,8 @@
                             <i class="fas fa-user fa-5x text-primary"></i>
                         </div>
                     {% endif %}
-                    {% if profil_nutzer.premium_status %}
-                        <span class="position-absolute top-0 end-0 badge bg-accent text-dark p-2 shadow-sm">
+                    {% if profil_nutzer.premium_status == True %}
+                        <span class="position-absolute top-0 end-0 badge bg-accent text-dark p-2 shadow-sm premium-badge">
                             <i class="fas fa-crown"></i> Premium
                         </span>
                     {% endif %}
@@ -36,6 +36,9 @@
                 <div class="p-3" style="background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: var(--border-radius); border-left: 4px solid var(--accent);">
                     <h1 class="display-5 text-white fw-bold mb-1">
                         <i class="fas fa-user-circle me-2"></i>{{ profil_nutzer.username }}
+                        {% if profil_nutzer.premium_status == True %}
+                            <span class="premium-text-badge ms-2" title="Premium-Mitglied"><i class="fas fa-crown"></i></span>
+                        {% endif %}
                     </h1>
                     {% if profil_nutzer.first_name or profil_nutzer.last_name %}
                         <p class="text-white mb-2 opacity-75">{{ profil_nutzer.first_name }} {{ profil_nutzer.last_name }}</p>
@@ -53,6 +56,10 @@
                         <div class="d-flex align-items-center bg-primary bg-opacity-50 text-white rounded-pill px-3 py-1">
                             <i class="fas fa-calendar-alt me-2"></i> 
                             <span>Seit {{ profil_nutzer.date_joined|date:"m.Y" }}</span>
+                        </div>
+                        <div class="d-flex align-items-center bg-accent text-dark rounded-pill px-3 py-1">
+                            <i class="fas fa-trophy me-2"></i> 
+                            <span>Level {{ current_level }} ({{ total_punkte }} Punkte)</span>
                         </div>
                     </div>
                     
@@ -149,7 +156,7 @@
                         <button type="button" class="btn-outline-primary" data-bs-dismiss="modal">
                             <i class="fas fa-times me-2"></i>Abbrechen
                         </button>
-                        <button type="submit" class="btn-submit">
+                        <button type="submit" class="btn-primary">
                             <i class="fas fa-save me-2"></i>Bio speichern
                         </button>
                     </div>
@@ -184,6 +191,11 @@
                                     <i class="fas fa-user fa-4x"></i>
                                 </div>
                             {% endif %}
+                            {% if profil_nutzer.premium_status == True %}
+                                <div class="profile-preview-premium">
+                                    <i class="fas fa-crown"></i>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="mb-3">
@@ -195,7 +207,7 @@
                         <button type="button" class="btn-outline-primary" data-bs-dismiss="modal">
                             <i class="fas fa-times me-2"></i>Abbrechen
                         </button>
-                        <button type="submit" class="btn-submit">
+                        <button type="submit" class="btn-primary">
                             <i class="fas fa-save me-2"></i>Profilbild speichern
                         </button>
                     </div>
@@ -217,6 +229,11 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link d-flex align-items-center" id="genres-tab" data-bs-toggle="tab" data-bs-target="#genres" type="button" role="tab">
                 <i class="fas fa-tags me-2"></i> Genres
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="gamification-tab" data-bs-toggle="tab" data-bs-target="#gamification" type="button" role="tab">
+                <i class="fas fa-trophy me-2"></i> Level &amp; Punkte
             </button>
         </li>
         {% if ist_eigenes_profil %}
@@ -300,7 +317,7 @@
                                 {% endif %}
                                 
                                 <div class="d-flex align-items-center mt-auto">
-                                    <a href="{% url 'playlist_detail' playlist.id %}" class="btn rounded-pill" style="background-color: var(--primary); color: white; padding: 8px 20px; font-weight: 500;">
+                                    <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-primary rounded-pill" style="padding: 8px 20px; font-weight: 500;">
                                         <i class="fas fa-eye me-2"></i> Ansehen
                                     </a>
                                 </div>
@@ -365,8 +382,15 @@
                     </div>
                 </div>
                 
+                <!-- Include hidden fields for other form data to maintain it -->
+                {% for field in form %}
+                    {% if field.name != 'genrevorlieben' %}
+                        <input type="hidden" name="{{ field.name }}" value="{{ field.value|default:'' }}">
+                    {% endif %}
+                {% endfor %}
+                
                 <div class="d-flex justify-content-center justify-content-md-end mt-4">
-                    <button type="submit" name="update_genres" class="btn-submit">
+                    <button type="submit" name="update_genres" class="btn btn-primary">
                         <i class="fas fa-save me-2"></i>Genres speichern
                     </button>
                 </div>
@@ -392,6 +416,46 @@
                 </div>
                 {% endif %}
             {% endif %}
+        </div>
+        
+        <!-- Gamification Tab -->
+        <div class="tab-pane fade" id="gamification" role="tabpanel" aria-labelledby="gamification-tab">
+            <h4 class="mb-4">
+                <i class="fas fa-trophy text-primary me-2"></i> Level &amp; Punkte
+            </h4>
+            
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="custom-card-header">
+                            <h5 class="mb-0 d-flex align-items-center">
+                                <i class="fas fa-id-card me-2"></i> Account-Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-4">
+                                <div class="display-4 fw-bold">{{ total_punkte }}</div>
+                                <p class="lead">Gesammelte Punkte</p>
+                                
+                                <div class="progress-container mt-3">
+                                    <div class="progress">
+                                        <div id="levelProgressBar" class="progress-bar bg-primary" role="progressbar" aria-valuenow="{{ level_progress }}" aria-valuemin="0" aria-valuemax="100" data-progress="{{ level_progress }}">{{ level_progress }}%</div>
+                                    </div>
+                                </div>
+                                <p class="mt-2">Level {{ current_level }} - {{ punkte_bis_naechstes_level }} Punkte bis Level {{ naechstes_level }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-star text-primary me-2"></i> 
+                                    <strong>Was bringen Punkte?</strong>
+                                </div>
+                                <p class="ms-4 text-muted">Punkte erhältst du für Aktivitäten wie das Erstellen von Playlists, Teilnahme an Events und mehr. Höhere Levels schalten exklusive Funktionen frei.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Profile Edit Tab (for own profile only) -->
@@ -469,7 +533,7 @@
                                     </div>
                                     
                                     <div class="mt-4 d-flex justify-content-end">
-                                        <button type="submit" name="update_profile" class="btn-submit pulse-animation">
+                                        <button type="submit" name="update_profile" class="btn btn-primary">
                                             <i class="fas fa-save me-2"></i>Änderungen speichern
                                         </button>
                                     </div>
@@ -492,6 +556,11 @@
                             <div class="card-body">
                                 <form method="post" action="{% url 'password_change' %}" class="password-change-form">
                                     {% csrf_token %}
+                                    
+                                    <!-- Hidden fields to preserve profile data -->
+                                    <input type="hidden" name="preserved_first_name" value="{{ profil_nutzer.first_name }}">
+                                    <input type="hidden" name="preserved_last_name" value="{{ profil_nutzer.last_name }}">
+                                    
                                     <div class="form-floating mb-3">
                                         <input type="password" name="old_password" id="id_old_password" class="form-control" required placeholder="Aktuelles Passwort">
                                         <label for="id_old_password">
@@ -537,45 +606,9 @@
                                     Wenn du deinen Account löschst, werden alle deine persönlichen Daten, Playlists und Aktivitäten dauerhaft entfernt. Diese Aktion kann nicht rückgängig gemacht werden.
                                 </p>
                                 <div class="d-flex justify-content-end">
-                                    <button type="button" class="btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                                    <button type="button" class="btn-danger" id="openDeleteAccountModal">
                                         <i class="fas fa-trash-alt me-2"></i>Account löschen
                                     </button>
-                                </div>
-                                
-                                <!-- Delete Account Modal -->
-                                <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content">
-                                            <div class="modal-header custom-header">
-                                                <h5 class="modal-title" id="deleteAccountModalLabel">
-                                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                                    Account löschen bestätigen
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p class="text-center mb-4">
-                                                    Bist du sicher, dass du deinen Account löschen möchtest?<br>
-                                                    <span class="text-danger fw-bold">Diese Aktion kann nicht rückgängig gemacht werden!</span>
-                                                </p>
-                                                <form method="post" action="{% url 'delete_account' %}" class="delete-account-form">
-                                                    {% csrf_token %}
-                                                    <div class="mb-3">
-                                                        <label for="password_confirm" class="form-label">Bitte gib dein Passwort ein, um zu bestätigen:</label>
-                                                        <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between mt-4">
-                                                        <button type="button" class="btn-outline-primary" data-bs-dismiss="modal">
-                                                            <i class="fas fa-times me-2"></i>Abbrechen
-                                                        </button>
-                                                        <button type="submit" class="btn-danger pulse-animation">
-                                                            <i class="fas fa-trash-alt me-2"></i>Account endgültig löschen
-                                                        </button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -671,11 +704,59 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Delete Account Modal -->
+<div class="modal-overlay" id="deleteAccountModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Account löschen</h3>
+        </div>
+        <div class="modal-body">
+            <p>Möchtest du deinen Account wirklich löschen? <strong>Alle deine Daten</strong>, einschließlich Playlists und Aktivitäten, werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+            <form method="post" action="{% url 'delete_account' %}" id="deleteAccountForm">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="password_confirm" class="form-label">Bitte gib dein Passwort ein, um zu bestätigen:</label>
+                    <input type="password" class="form-control" id="password_confirm" name="password_confirm" autocomplete="current-password" required>
+                </div>
+            </form>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="modal-btn cancel" id="cancelDeleteAccount">Abbrechen</button>
+            <button type="button" class="modal-btn confirm" id="confirmDeleteAccount">Ja, Account löschen</button>
+        </div>
+    </div>
+</div>
+
 {% endwith %}
 {% endblock %}
 
 {% block extra_css %}
 <style>
+    /* Override all btn-primary styles to ensure consistency */
+    .btn.btn-primary {
+        background-color: var(--primary) !important;
+        color: white !important;
+        border-radius: 30px !important;
+        padding: 0.375rem 0.75rem !important;
+        font-weight: 500 !important;
+        border: 1px solid var(--primary) !important;
+        box-shadow: none !important;
+        transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out, transform .15s ease-in-out !important;
+    }
+    
+    .btn.btn-primary:hover {
+        background-color: var(--primary-dark, #e34e17) !important;
+        border-color: var(--primary-dark, #e34e17) !important;
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.4) !important;
+    }
+
+    .btn.btn-primary i {
+        margin-right: 0.5rem;
+    }
+    
     /* Custom Tabs Styling */
     .custom-tabs {
         border-bottom: none;
@@ -900,43 +981,20 @@
     }
 
     /* Allgemeiner Button-Style für die ganze Profilseite */
-    .btn-submit, .btn-primary {
-        background: linear-gradient(45deg, var(--primary), var(--primary-light));
-        border: none;
-        color: white;
-        padding: 0.75rem 2rem;
-        border-radius: 30px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
-        letter-spacing: 0.5px;
-        text-decoration: none;
-    }
-    
-    .btn-submit:hover, .btn-primary:hover {
+    .btn-primary:hover {
         transform: translateY(-3px);
         box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.4);
         color: white;
     }
     
-    .btn-submit:active, .btn-primary:active {
+    .btn-primary:active {
         transform: translateY(1px);
     }
     
     /* Genres Tab spezifischer Button */
-    .genres-form .btn-submit {
-        background: var(--primary);
+    .genres-form {
         padding: 0.7rem 1.8rem;
-        box-shadow: 0 3px 12px rgba(var(--primary-rgb), 0.25);
         font-size: 0.95rem;
-    }
-    
-    .genres-form .btn-submit:hover {
-        background: linear-gradient(45deg, var(--primary), var(--primary-light));
-        box-shadow: 0 4px 18px rgba(var(--primary-rgb), 0.35);
     }
     
     /* Versionen für kleinere Buttons */
@@ -1188,7 +1246,6 @@
     }
     
     /* Button Styles */
-    .btn-submit,
     .btn-warning,
     .btn-danger,
     .btn-outline-primary {
@@ -1388,336 +1445,499 @@
         border-top: none;
         border-radius: 0 0 var(--border-radius) var(--border-radius);
     }
+    
+    /* Toast Styling */
+    .toast-container {
+        z-index: 9999;
+    }
+    
+    /* Progress Bar Styling */
+    .progress-container {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .progress {
+        height: 25px !important;
+        border-radius: var(--border-radius) !important;
+        overflow: hidden;
+        background-color: var(--gray-200);
+    }
+    
+    .progress-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 500;
+        transition: width 0.6s ease;
+    }
+    
+    .progress-bar.bg-primary {
+        background-color: var(--primary) !important;
+    }
+    
+    /* Modal Fixes */
+    .modal {
+        z-index: 1050 !important;
+    }
+    
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
+    
+    #deleteAccountModal {
+        z-index: 1060 !important;
+    }
+    
+    /* Fix for modal focus issues */
+    .modal-open .modal,
+    .modal.show,
+    .modal.fade.show {
+        pointer-events: auto !important;
+    }
+    
+    .modal-open .modal .modal-dialog,
+    .modal.show .modal-dialog,
+    .modal.fade.show .modal-dialog {
+        pointer-events: auto !important;
+    }
+    
+    .modal-open .modal .modal-content,
+    .modal.show .modal-content,
+    .modal.fade.show .modal-content {
+        pointer-events: auto !important;
+    }
+    
+    .modal-open .modal .modal-body,
+    .modal.show .modal-body,
+    .modal.fade.show .modal-body {
+        pointer-events: auto !important;
+    }
+    
+    .modal-open .modal form,
+    .modal.show form,
+    .modal.fade.show form {
+        pointer-events: auto !important;
+    }
+    
+    .modal-open .modal form *,
+    .modal.show form *,
+    .modal.fade.show form * {
+        pointer-events: auto !important;
+    }
+    
+    .modal-open .modal .btn,
+    .modal.show .btn,
+    .modal.fade.show .btn {
+        pointer-events: auto !important;
+    }
+    
+    /* Custom Modal Styles (No Bootstrap Dependency) */
+    .custom-modal {
+        display: none;
+    }
+    
+    /* Delete Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .modal-container {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        width: 90%;
+        max-width: 500px;
+        padding: 0;
+        overflow: hidden;
+        animation: modal-appear 0.3s ease-out;
+    }
+    
+    @keyframes modal-appear {
+        from {
+            opacity: 0;
+            transform: translateY(-50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .modal-header {
+        background-color: var(--danger);
+        color: white;
+        padding: 1.25rem;
+        border-top-left-radius: var(--border-radius);
+        border-top-right-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+    }
+    
+    .modal-header i {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 600;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-body p {
+        color: var(--gray-700);
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 0 1.5rem 1.5rem 1.5rem;
+    }
+    
+    .modal-btn {
+        padding: 0.6rem 1.25rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        font-size: 0.95rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .modal-btn.cancel {
+        background-color: var(--gray-200);
+        color: var(--gray-700);
+    }
+    
+    .modal-btn.cancel:hover {
+        background-color: var(--gray-300);
+    }
+    
+    .modal-btn.confirm {
+        background: #dc3545 !important;
+        color: white !important;
+        border: none !important;
+    }
+    
+    .modal-btn.confirm:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(220, 53, 69, 0.3);
+        background: #e25563 !important;
+        color: white !important;
+    }
+    
+    #deleteAccountForm .form-label {
+        font-weight: 500;
+        color: var(--gray-700);
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    #deleteAccountForm .form-control {
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        padding: 0.75rem 1rem;
+        transition: all 0.2s ease;
+    }
+    
+    #deleteAccountForm .form-control:focus {
+        border-color: var(--danger);
+        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+    }
+    
+    /* Premium Badge Styling */
+    .premium-badge {
+        background: linear-gradient(135deg, #ffcd3c, #ffa600) !important;
+        color: #784700 !important;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 0.35rem 0.7rem !important;
+        border-radius: 20px;
+        box-shadow: 0 4px 10px rgba(255, 166, 0, 0.3) !important;
+        transform: translateY(-5px) translateX(5px);
+        border: 2px solid white;
+        animation: premium-badge-shine 2s infinite;
+        z-index: 10;
+    }
+    
+    .premium-badge i {
+        color: #784700;
+        margin-right: 0.35rem;
+        font-size: 1rem;
+        animation: crown-wobble 3s ease-in-out infinite;
+    }
+    
+    @keyframes premium-badge-shine {
+        0%, 100% {
+            box-shadow: 0 4px 10px rgba(255, 166, 0, 0.3);
+        }
+        50% {
+            box-shadow: 0 4px 15px rgba(255, 166, 0, 0.7);
+        }
+    }
+    
+    @keyframes crown-wobble {
+        0%, 100% {
+            transform: rotate(-5deg);
+        }
+        50% {
+            transform: rotate(5deg);
+        }
+    }
+    
+    /* Profile Image Preview with Premium status */
+    .profile-preview-container {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid var(--gray-200);
+        background-color: var(--light);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+    
+    .profile-preview-premium {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: linear-gradient(135deg, #ffcd3c, #ffa600);
+        color: #784700;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+        box-shadow: 0 3px 8px rgba(255, 166, 0, 0.4);
+        z-index: 2;
+        animation: premium-badge-shine 2s infinite;
+    }
+    
+    .profile-preview-premium i {
+        font-size: 16px;
+        animation: crown-wobble 3s ease-in-out infinite;
+    }
+    
+    /* Username premium indicator */
+    .premium-text-badge {
+        color: #ffa600;
+        font-size: 0.6em;
+        vertical-align: middle;
+        display: inline-block;
+        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+    }
+    
+    .premium-text-badge i {
+        animation: crown-wobble 3s ease-in-out infinite;
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
+<!-- Script to only clear password fields when there are errors -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Bootstrap tabs
-    const triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button'))
-    triggerTabList.forEach(function(triggerEl) {
-        const tabTrigger = new bootstrap.Tab(triggerEl)
-        triggerEl.addEventListener('click', function(event) {
-            event.preventDefault()
-            tabTrigger.show()
-        })
-    })
+    // Clear password fields regardless of errors
+    // This ensures password fields are always blank when the page loads
+    const passwordFields = document.querySelectorAll('input[type="password"]');
+    passwordFields.forEach(field => {
+        field.value = '';
+    });
     
-    // If there's a hash in the URL, activate the corresponding tab
-    if (window.location.hash) {
-        const hash = window.location.hash.substring(1);
-        const tab = document.querySelector(`#profileTabs button[data-bs-target="#${hash}"]`);
-        if (tab) {
-            const tabInstance = new bootstrap.Tab(tab);
-            tabInstance.show();
+    // Set progress bar width
+    const progressBar = document.getElementById('levelProgressBar');
+    if (progressBar) {
+        const progress = progressBar.getAttribute('data-progress');
+        progressBar.style.width = progress + '%';
+    }
+    
+    // Delete account modal functionality
+    const openDeleteModalBtn = document.getElementById('openDeleteAccountModal');
+    const deleteModal = document.getElementById('deleteAccountModal');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteAccount');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteAccount');
+    const deleteAccountForm = document.getElementById('deleteAccountForm');
+    
+    if (openDeleteModalBtn && deleteModal) {
+        openDeleteModalBtn.addEventListener('click', function() {
+            deleteModal.style.display = 'flex';
+        });
+        
+        if (cancelDeleteBtn) {
+            cancelDeleteBtn.addEventListener('click', function() {
+                deleteModal.style.display = 'none';
+            });
         }
-    }
-    
-    // Profile Form AJAX Submission
-    const profileForm = document.getElementById('profileForm');
-    if (profileForm) {
-        profileForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            // Erstelle ein FormData-Objekt
-            const formData = new FormData(profileForm);
-            formData.append('update_profile', 'true');
-            
-            // AJAX-Request senden
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Erfolgreiche Aktualisierung
-                    
-                    // Aktualisiere den Nutzernamen in der Profilanzeige, falls er geändert wurde
-                    if (data.username) {
-                        const usernameElement = document.querySelector('h1.display-5.text-white.fw-bold');
-                        if (usernameElement) {
-                            usernameElement.innerHTML = `<i class="fas fa-user-circle me-2"></i>${data.username}`;
-                        }
-                    }
-                    
-                    // Aktualisiere den Namen in der Profilanzeige
-                    if (data.first_name || data.last_name) {
-                        const nameElement = document.querySelector('.text-white.mb-2.opacity-75');
-                        if (nameElement) {
-                            nameElement.textContent = `${data.first_name || ''} ${data.last_name || ''}`.trim();
-                        }
-                    }
-                    
-                    // Erfolgsmeldung anzeigen
-                    const alertHtml = `
-                        <div class="alert bg-gray border-0 text-dark alert-dismissible fade show" role="alert" style="background-color: #e9e9e9;">
-                            <i class="fas fa-check-circle me-2" style="color: #E55934 !important;"></i> ${data.message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    `;
-                    
-                    // Füge die Erfolgsmeldung am Anfang des Tabs ein
-                    const tabContent = document.getElementById('profile');
-                    tabContent.insertAdjacentHTML('afterbegin', alertHtml);
-                    
-                    // Entferne die Meldung nach 5 Sekunden automatisch
-                    setTimeout(() => {
-                        const alert = tabContent.querySelector('.alert');
-                        if (alert) {
-                            alert.classList.remove('show');
-                            setTimeout(() => alert.remove(), 300);
-                        }
-                    }, 5000);
-                } else {
-                    // Fehlermeldung anzeigen
-                    console.error('Fehler beim Speichern der Profildaten:', data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Fehler beim Senden der Anfrage:', error);
+        
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function() {
+                deleteAccountForm.submit();
             });
-        });
-    }
-    
-    // Bio Form AJAX Submission
-    const bioForm = document.getElementById('bioForm');
-    if (bioForm) {
-        bioForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            // Erstelle ein FormData-Objekt
-            const formData = new FormData(bioForm);
-            
-            // AJAX-Request senden
-            fetch(bioForm.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Bio im Hauptbereich aktualisieren
-                    const bioText = document.querySelector('.card-body .lead');
-                    if (bioText) {
-                        bioText.textContent = data.bio;
-                    }
-                    
-                    // Bio-Container für leere Bio überprüfen
-                    const bioContainer = document.querySelector('.card-body');
-                    if (data.bio && bioContainer.querySelector('.text-center.text-muted')) {
-                        // Leere Bio-Anzeige durch tatsächliche Bio ersetzen
-                        bioContainer.innerHTML = `
-                            <div class="d-flex">
-                                <div class="me-3 text-primary">
-                                    <i class="fas fa-quote-left fa-2x"></i>
-                                </div>
-                                <div>
-                                    <p class="lead mb-0">${data.bio}</p>
-                                </div>
-                            </div>
-                        `;
-                    } else if (!data.bio && !bioContainer.querySelector('.text-center.text-muted')) {
-                        // Bio entfernt, zeige "Keine Bio" an
-                        bioContainer.innerHTML = `
-                            <div class="text-center text-muted">
-                                <i class="fas fa-comment-alt fa-2x mb-3 opacity-50"></i>
-                                <p>Du hast noch keine Bio hinzugefügt. Klicke auf das Stiftsymbol, um eine Bio hinzuzufügen.</p>
-                            </div>
-                        `;
-                    }
-                    
-                    // Modal schließen
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editBioModal'));
-                    modal.hide();
-                    
-                    // Erfolgsmeldung anzeigen
-                    const alertHtml = `
-                        <div class="alert bg-gray border-0 text-dark alert-dismissible fade show" role="alert" style="background-color: #e9e9e9;">
-                            <i class="fas fa-check-circle me-2" style="color: #E55934 !important;"></i> ${data.message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    `;
-                    
-                    // Füge die Erfolgsmeldung über dem Bio-Container ein
-                    document.querySelector('.container.mb-4').insertAdjacentHTML('beforebegin', alertHtml);
-                    
-                    // Entferne die Meldung nach 5 Sekunden automatisch
-                    setTimeout(() => {
-                        const alert = document.querySelector('.alert');
-                        if (alert) {
-                            alert.classList.remove('show');
-                            setTimeout(() => alert.remove(), 300);
-                        }
-                    }, 5000);
-                } else {
-                    // Fehlermeldung anzeigen
-                    console.error('Fehler beim Speichern der Bio:', data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Fehler beim Senden der Anfrage:', error);
-            });
-        });
-    }
-    
-    // Profile Image Form AJAX Submission
-    const profileImageForm = document.getElementById('profileImageForm');
-    if (profileImageForm) {
-        profileImageForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            // Erstelle ein FormData-Objekt
-            const formData = new FormData(profileImageForm);
-            
-            // AJAX-Request senden
-            fetch(profileImageForm.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Profilbild im Header aktualisieren
-                    if (data.image_url) {
-                        const profileImages = document.querySelectorAll('.profile-hero img, .rounded-circle.img-thumbnail');
-                        profileImages.forEach(img => {
-                            img.src = data.image_url;
-                        });
-                        
-                        // Placeholder entfernen falls vorhanden
-                        const placeholders = document.querySelectorAll('.rounded-circle.d-flex');
-                        placeholders.forEach(placeholder => {
-                            const container = placeholder.parentElement;
-                            const img = document.createElement('img');
-                            img.src = data.image_url;
-                            img.alt = "Profilbild";
-                            img.className = "rounded-circle img-thumbnail shadow";
-                            img.style = "width: 180px; height: 180px; object-fit: cover; border: 4px solid white;";
-                            container.replaceChild(img, placeholder);
-                        });
-                    }
-                    
-                    // Modal schließen
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileImageModal'));
-                    modal.hide();
-                    
-                    // Erfolgsmeldung anzeigen
-                    const alertHtml = `
-                        <div class="alert bg-gray border-0 text-dark alert-dismissible fade show" role="alert" style="background-color: #e9e9e9;">
-                            <i class="fas fa-check-circle me-2" style="color: #E55934 !important;"></i> ${data.message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    `;
-                    
-                    // Füge die Erfolgsmeldung am Anfang der Seite ein
-                    document.querySelector('.container-fluid.mb-5').insertAdjacentHTML('beforebegin', alertHtml);
-                    
-                    // Entferne die Meldung nach 5 Sekunden automatisch
-                    setTimeout(() => {
-                        const alert = document.querySelector('.alert');
-                        if (alert) {
-                            alert.classList.remove('show');
-                            setTimeout(() => alert.remove(), 300);
-                        }
-                    }, 5000);
-                } else {
-                    // Fehlermeldung anzeigen
-                    console.error('Fehler beim Speichern des Profilbilds:', data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Fehler beim Senden der Anfrage:', error);
-            });
-        });
-    }
-    
-    // Genres Form AJAX Submission
-    const genresForm = document.getElementById('genres-form');
-    if (genresForm) {
-        genresForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            
-            // Erstelle ein FormData-Objekt
-            const formData = new FormData(genresForm);
-            formData.append('update_genres', 'true');
-            
-            // AJAX-Request senden
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Erfolgsmeldung anzeigen
-                    const alertHtml = `
-                        <div class="alert bg-gray border-0 text-dark alert-dismissible fade show" role="alert" style="background-color: #e9e9e9;">
-                            <i class="fas fa-check-circle me-2" style="color: #E55934 !important;"></i> ${data.message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    `;
-                    
-                    // Füge die Erfolgsmeldung am Anfang des Genres-Tabs ein
-                    const genresTab = document.getElementById('genres');
-                    genresTab.insertAdjacentHTML('afterbegin', alertHtml);
-                    
-                    // Entferne die Meldung nach 5 Sekunden automatisch
-                    setTimeout(() => {
-                        const alert = genresTab.querySelector('.alert');
-                        if (alert) {
-                            alert.classList.remove('show');
-                            setTimeout(() => alert.remove(), 300);
-                        }
-                    }, 5000);
-                } else {
-                    // Fehlermeldung anzeigen
-                    console.error('Fehler beim Speichern der Genres:', data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Fehler beim Senden der Anfrage:', error);
-            });
-        });
-    }
-    
-    // Profilbild Vorschau
-    const profileImageInput = document.getElementById('profilbild');
-    if (profileImageInput) {
-        profileImageInput.addEventListener('change', function() {
-            const previewContainer = document.querySelector('.profile-preview-container');
-            
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    // Entferne altes Vorschaubild oder Placeholder
-                    previewContainer.innerHTML = '';
-                    
-                    // Erstelle neues Vorschaubild
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.classList.add('profile-preview-image');
-                    previewContainer.appendChild(img);
-                }
-                
-                reader.readAsDataURL(this.files[0]);
+        }
+        
+        // Close modal when clicking outside
+        deleteModal.addEventListener('click', function(event) {
+            if (event.target === deleteModal) {
+                deleteModal.style.display = 'none';
             }
         });
     }
-})
+    
+    // Überprüfen, ob URL-Parameter vorhanden sind
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Toast für Profilbild
+    if (urlParams.get('profile_image_updated') === 'true') {
+        showToast('Profilbild erfolgreich aktualisiert!');
+    }
+    
+    // Toast für Bio
+    if (urlParams.get('bio_updated') === 'true') {
+        showToast('Bio erfolgreich aktualisiert!');
+    }
+    
+    // Toast für Profilaktualisierung
+    if (urlParams.get('profile_updated') === 'true') {
+        showToast('Profil erfolgreich aktualisiert!');
+    }
+    
+    // Toast für Passwort-Änderung
+    if (urlParams.get('password_changed') === 'true') {
+        showToast('Passwort erfolgreich geändert!');
+    }
+    
+    // Forms abfangen
+    const profileImageForm = document.getElementById('profileImageForm');
+    if (profileImageForm) {
+        profileImageForm.addEventListener('submit', function() {
+            // Hier könnten wir Loading-Zustände implementieren
+        });
+    }
+    
+    const bioForm = document.getElementById('bioForm');
+    if (bioForm) {
+        bioForm.addEventListener('submit', function(e) {
+            // Prevent default form submission
+            e.preventDefault();
+            
+            // Get bio content
+            const bioContent = document.getElementById('bio').value;
+            
+            // Create FormData object
+            const formData = new FormData(bioForm);
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Submit form using fetch API
+            fetch(bioForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Close modal
+                    const bioModal = bootstrap.Modal.getInstance(document.getElementById('editBioModal'));
+                    bioModal.hide();
+                    
+                    // Update bio content in the page if displayed
+                    const bioDisplay = document.querySelector('.card-body .lead');
+                    if (bioDisplay) {
+                        bioDisplay.textContent = bioContent;
+                    }
+                    
+                    // Show success toast
+                    showToast('Bio erfolgreich aktualisiert!');
+                } else {
+                    showToast('Fehler beim Aktualisieren der Bio.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Fehler bei der Verbindung zum Server.');
+            });
+        });
+    }
+    
+    // Handle profile form submission
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            // We'll let the form submit normally, but you could implement AJAX here
+            // similar to the bioForm if needed
+        });
+    }
+});
+
+// Show toast notification
+function showToast(message) {
+    // Check if Bootstrap toast is available
+    if (typeof bootstrap !== 'undefined') {
+        // Create toast element
+        const toastEl = document.createElement('div');
+        toastEl.className = 'toast align-items-center';
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Add to container or body
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        toastContainer.appendChild(toastEl);
+        
+        // Show toast
+        const toast = new bootstrap.Toast(toastEl, {
+            delay: 3000
+        });
+        toast.show();
+        
+        // Remove after hiding
+        toastEl.addEventListener('hidden.bs.toast', function() {
+            toastEl.remove();
+        });
+    } else {
+        // Fallback if Bootstrap is not available
+        console.log('Toast message:', message);
+    }
+}
 </script>
 {% endblock %}

@@ -1,0 +1,888 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+
+{% block title %}Abonnement verwalten | GeoTune{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom card header styles */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h3, 
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Custom modal styles */
+    .custom-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1050;
+        overflow-y: auto;
+    }
+    
+    .custom-modal-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+        padding: 40px 20px;
+    }
+    
+    .custom-modal-content {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        margin: 0 auto;
+    }
+    
+    .custom-modal-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .custom-modal-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .custom-modal-title {
+        margin: 0;
+        color: var(--dark);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    
+    .custom-modal-title i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    .custom-modal-close {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0;
+        color: var(--gray-600);
+    }
+    
+    .custom-modal-body {
+        padding: 1.5rem;
+    }
+    
+    /* Buttons */
+    .btn-outline-primary {
+        color: var(--primary);
+        border-color: var(--primary);
+        background-color: transparent;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .btn-outline-danger {
+        color: #dc3545;
+        border-color: #dc3545;
+        background-color: transparent;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-danger:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+    }
+    
+    /* Pulse Animation */
+    .pulse-animation {
+        position: relative;
+    }
+    
+    .pulse-animation::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: var(--border-radius);
+        animation: pulse 2s infinite;
+        opacity: 0;
+        z-index: -1;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+            opacity: 0.7;
+        }
+        
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+            opacity: 0;
+        }
+        
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            opacity: 0;
+        }
+    }
+    
+    /* Anpassungen für Karten und Buttons */
+    .card {
+        transition: all 0.3s ease;
+        border: 1px solid var(--gray-200);
+    }
+    
+    .card.border-primary {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.15);
+    }
+    
+    .btn-primary {
+        background-color: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-primary:disabled {
+        background-color: var(--primary);
+        border-color: var(--primary);
+        opacity: 0.8;
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--primary) !important;
+    }
+    
+    /* Custom button styles - override Bootstrap's active state */
+    .btn-primary:active,
+    .btn-primary:focus:active {
+        background-color: var(--primary) !important; /* Keep orange */
+        border-color: var(--primary-dark) !important;
+        transform: translateY(1px); /* Subtle "pressed" effect */
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.1) !important; /* Inner shadow instead of blue outline */
+    }
+    
+    /* Remove focus styles completely */
+    .btn-primary:focus,
+    .btn-primary.focus {
+        box-shadow: none !important;
+        border-color: var(--primary) !important;
+    }
+    
+    /* Reset border color when focus is lost or mouse leaves */
+    .btn-primary:not(:active):not(:focus),
+    .btn-primary:hover:not(:active) {
+        border-color: var(--primary) !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Override outline-primary buttons focus effects */
+    .btn-outline-primary:focus,
+    .btn-outline-primary:active,
+    .btn-outline-primary:active:focus {
+        background-color: var(--primary) !important;
+        color: white !important;
+        border-color: var(--primary) !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    
+    /* Style alert-secondary in modal - change from green to gray */
+    .custom-modal-content .alert-secondary {
+        background-color: var(--gray-100);
+        color: var(--gray-700);
+        border-color: var(--gray-200);
+    }
+    
+    .custom-modal-content .alert-secondary i.text-primary {
+        color: var(--gray-700) !important;
+    }
+    
+    /* Override all button focus outlines */
+    button:focus, 
+    button:active,
+    .btn:focus,
+    .btn:active {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="custom-card-header">
+                    <i class="fas fa-crown text-primary"></i>
+                    <h3 class="mb-0">Dein GeoTune Abonnement</h3>
+                </div>
+                <div class="card-body">
+                    {% if user_abo %}
+                        <div class="current-plan mb-4">
+                            <h4>Dein aktuelles Abo: <span class="badge bg-primary">{{ user_abo.get_abo_typ_display }}</span></h4>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p><strong>Startdatum:</strong> {{ user_abo.startdatum|date:"d.m.Y" }}</p>
+                                    {% if user_abo.enddatum %}
+                                        <p><strong>Enddatum:</strong> {{ user_abo.enddatum|date:"d.m.Y" }}</p>
+                                    {% else %}
+                                        <p><strong>Status:</strong> Aktiv</p>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h5>{{ user_abo.preis }} €/Monat</h5>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>Du hast aktuell kein aktives Abonnement.</p>
+                        </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <h4 class="mb-4">Verfügbare Abonnements</h4>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 {% if user_abo.abo_typ == 'basic' %}border-primary{% endif %}">
+                                <div class="card-header text-center bg-light">
+                                    <h5 class="mb-0">Basic</h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h3 class="text-center">0,00 €</h3>
+                                    <p class="text-center text-muted">pro Monat</p>
+                                    <ul class="list-unstyled mt-3">
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Alle öffentlichen Playlists</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Basis-Nutzerprofil</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Teilnahme an Events</li>
+                                    </ul>
+                                    <div class="mt-auto text-center">
+                                        {% if user_abo.abo_typ == 'basic' %}
+                                            <button class="btn btn-primary" disabled>Aktuelles Abo</button>
+                                        {% else %}
+                                            <form method="post" id="basicPlanForm">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="abo_typ" value="basic">
+                                                <button type="submit" class="btn btn-outline-primary">Auswählen</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 {% if user_abo.abo_typ == 'premium' %}border-primary{% endif %}">
+                                <div class="card-header text-center bg-light">
+                                    <h5 class="mb-0">Premium</h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h3 class="text-center">3,99 €</h3>
+                                    <p class="text-center text-muted">pro Monat</p>
+                                    <ul class="list-unstyled mt-3">
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Alles aus Basic</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Unbegrenzte Playlists</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Besondere Musikempfehlungen</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Keine Werbung</li>
+                                    </ul>
+                                    <div class="mt-auto text-center">
+                                        {% if user_abo.abo_typ == 'premium' %}
+                                            <button class="btn btn-primary" disabled>Aktuelles Abo</button>
+                                        {% else %}
+                                            <form method="post" id="premiumPlanForm">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="abo_typ" value="premium">
+                                                <button type="submit" class="btn btn-outline-primary">Auswählen</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 {% if user_abo.abo_typ == 'pro' %}border-primary{% endif %}">
+                                <div class="card-header text-center bg-light">
+                                    <h5 class="mb-0">Professional</h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h3 class="text-center">8,99 €</h3>
+                                    <p class="text-center text-muted">pro Monat</p>
+                                    <ul class="list-unstyled mt-3">
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Alles aus Premium</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Exklusive Events</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Geocaching-Belohnungen</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Playlist-Bearbeitung für Teams</li>
+                                    </ul>
+                                    <div class="mt-auto text-center">
+                                        {% if user_abo.abo_typ == 'pro' %}
+                                            <button class="btn btn-primary" disabled>Aktuelles Abo</button>
+                                        {% else %}
+                                            <form method="post" id="proPlanForm">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="abo_typ" value="pro">
+                                                <button type="submit" class="btn btn-outline-primary">Auswählen</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if user_abo and user_abo.abo_typ != 'basic' %}
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-outline-danger" id="openCancelModalBtn">
+                                <i class="fas fa-times-circle me-2"></i>Abonnement kündigen
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Modal für Abonnement kündigen -->
+{% if user_abo and user_abo.abo_typ != 'basic' %}
+<div id="cancelSubscriptionModal" class="custom-modal-overlay">
+    <div class="custom-modal-container">
+        <div class="custom-modal-content">
+            <div class="custom-modal-header">
+                <h5 class="custom-modal-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Abonnement kündigen
+                </h5>
+                <button type="button" class="custom-modal-close" id="closeModalBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="custom-modal-body">
+                <p class="text-center mb-4">
+                    Bist du sicher, dass du dein {{ user_abo.get_abo_typ_display }}-Abonnement kündigen möchtest?<br>
+                    <span class="text-danger">Dein Zugang zu den Premium-Funktionen endet sofort.</span>
+                </p>
+                <div class="alert alert-secondary mb-4">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-info-circle fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0">Nach der Kündigung wirst du automatisch auf den <strong>Basic-Plan</strong> zurückgestuft, der kostenlos ist.</p>
+                        </div>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'kuendigen_abonnement' %}" class="cancel-subscription-form" id="cancelSubscriptionForm">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn-outline-primary" id="cancelModalBtn">
+                            <i class="fas fa-times me-2"></i>Abbrechen
+                        </button>
+                        <button type="submit" class="btn-danger pulse-animation">
+                            <i class="fas fa-times-circle me-2"></i>Abonnement kündigen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal-Controller
+        const cancelModal = document.getElementById('cancelSubscriptionModal');
+        const cancelTrigger = document.getElementById('openCancelModalBtn');
+        const closeModalBtn = document.querySelector('.custom-modal-close');
+        const cancelModalBtn = document.getElementById('cancelModalBtn');
+        
+        function openModal() {
+            cancelModal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal() {
+            cancelModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        if (cancelTrigger) {
+            cancelTrigger.addEventListener('click', openModal);
+        }
+        
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', closeModal);
+        }
+        
+        if (cancelModalBtn) {
+            cancelModalBtn.addEventListener('click', closeModal);
+        }
+        
+        // Klick außerhalb des Modals schließt es
+        if (cancelModal) {
+            cancelModal.addEventListener('click', function(event) {
+                if (event.target === cancelModal || event.target.classList.contains('custom-modal-container')) {
+                    closeModal();
+                }
+            });
+            
+            // Verhindern, dass Klicks auf den Modal-Inhalt das Modal schließen
+            const modalContent = document.querySelector('.custom-modal-content');
+            if (modalContent) {
+                modalContent.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                });
+            }
+        }
+        
+        // Toast-System
+        // Get the existing toast container
+        const toastContainer = document.querySelector('.toast-container');
+        
+        function showToast(message, duration = 5000) {
+            // Check if Bootstrap toast is available
+            if (typeof bootstrap !== 'undefined') {
+                // Create toast element
+                const toastEl = document.createElement('div');
+                toastEl.className = 'toast align-items-center';
+                toastEl.setAttribute('role', 'alert');
+                toastEl.setAttribute('aria-live', 'assertive');
+                toastEl.setAttribute('aria-atomic', 'true');
+                
+                toastEl.innerHTML = `
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                `;
+                
+                // Add directly to our container
+                toastContainer.appendChild(toastEl);
+                
+                // Show toast
+                const toast = new bootstrap.Toast(toastEl, {
+                    delay: duration
+                });
+                toast.show();
+                
+                // Remove after hiding
+                toastEl.addEventListener('hidden.bs.toast', function() {
+                    toastEl.remove();
+                });
+                
+                // Return the toast element for later reference
+                return toastEl;
+            } else {
+                // Fallback if Bootstrap is not available
+                console.log('Toast message:', message);
+                return null;
+            }
+        }
+        
+        // URL-Parameter für Toast-Nachrichten prüfen und History API verwenden
+        // um zu vermeiden, dass die Nachricht bei jedem Neuladen angezeigt wird
+        const urlParams = new URLSearchParams(window.location.search);
+        const messageType = urlParams.get('message');
+        
+        if (messageType) {
+            if (messageType === 'cancelled') {
+                showToast('Dein Abonnement wurde erfolgreich gekündigt. Du nutzt jetzt den Basic-Plan.');
+            } else if (messageType === 'upgraded') {
+                const plan = urlParams.get('plan');
+                const planName = plan === 'premium' ? 'Premium' : (plan === 'pro' ? 'Professional' : 'Basic');
+                showToast(`Dein Abonnement wurde auf ${planName} aktualisiert. Viel Spaß mit den neuen Funktionen!`);
+            }
+            
+            // URL ohne Parameter ersetzen nach kurzer Verzögerung
+            setTimeout(() => {
+                history.replaceState(null, document.title, window.location.pathname);
+            }, 100);
+        }
+        
+        // Formular-Handler für Abo-Wechsel
+        const aboPlanForms = [
+            document.getElementById('basicPlanForm'),
+            document.getElementById('premiumPlanForm'),
+            document.getElementById('proPlanForm')
+        ];
+        
+        aboPlanForms.forEach(form => {
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    // Standardverhalten verhindern
+                    event.preventDefault();
+                    
+                    // Daten für AJAX-Request vorbereiten
+                    const planType = this.querySelector('input[name="abo_typ"]').value;
+                    const planName = planType === 'premium' ? 'Premium' : (planType === 'pro' ? 'Professional' : 'Basic');
+                    const formData = new FormData(this);
+                    
+                    // Deaktiviere alle Formular-Buttons während der Anfrage
+                    document.querySelectorAll('button[type="submit"]').forEach(btn => {
+                        btn.disabled = true;
+                    });
+                    
+                    // AJAX-Request senden
+                    fetch('{% url "abonnement_verwalten" %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                        },
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // Die UI sofort aktualisieren
+                            updateUIAfterSubscriptionChange(planType);
+                            
+                            // Kurze Verzögerung für die Erfolgsmeldung, damit die UI-Aktualisierung zuerst stattfindet
+                            setTimeout(() => {
+                                // Erfolgsmeldung anzeigen
+                                showToast(data.message);
+                            }, 100);
+                        } else {
+                            showToast('Es ist ein Fehler aufgetreten.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('Es gab ein Problem bei der Verbindung zum Server.');
+                    })
+                    .finally(() => {
+                        // Buttons wieder aktivieren
+                        document.querySelectorAll('button[type="submit"]').forEach(btn => {
+                            if (!btn.classList.contains('btn-primary')) { // Nicht den "Aktuelles Abo"-Button aktivieren
+                                btn.disabled = false;
+                            }
+                        });
+                    });
+                });
+            }
+        });
+        
+        // Kündigung-Formular-Handler
+        const cancelForm = document.getElementById('cancelSubscriptionForm');
+        if (cancelForm) {
+            cancelForm.addEventListener('submit', function(event) {
+                // Standardverhalten verhindern
+                event.preventDefault();
+                
+                // Deaktiviere alle Formular-Buttons während der Anfrage
+                document.querySelectorAll('button[type="submit"]').forEach(btn => {
+                    btn.disabled = true;
+                });
+                
+                // Modal schließen
+                closeModal();
+                
+                // AJAX-Request vorbereiten
+                const formData = new FormData(this);
+                
+                // AJAX-Request senden
+                fetch(this.getAttribute('action'), {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Die UI sofort aktualisieren
+                        updateUIAfterSubscriptionChange('basic');
+                        
+                        // Kurze Verzögerung für die Erfolgsmeldung, damit die UI-Aktualisierung zuerst stattfindet
+                        setTimeout(() => {
+                            // Erfolgsmeldung anzeigen
+                            showToast(data.message);
+                        }, 100);
+                    } else {
+                        showToast(data.message || 'Es ist ein Fehler aufgetreten.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Es gab ein Problem bei der Verbindung zum Server.');
+                })
+                .finally(() => {
+                    // Buttons wieder aktivieren
+                    document.querySelectorAll('button[type="submit"]').forEach(btn => {
+                        if (!btn.classList.contains('btn-primary')) { // Nicht den "Aktuelles Abo"-Button aktivieren
+                            btn.disabled = false;
+                        }
+                    });
+                });
+            });
+        }
+        
+        // Funktion zum Aktualisieren der UI ohne Neuladen
+        function updateUIAfterSubscriptionChange(newPlanType) {
+            console.log("UI-Update für Plan:", newPlanType);
+            
+            // Aktuelle Karten-Highlights entfernen
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('border-primary');
+            });
+            
+            // Alle Formularelemente suchen und durch "Auswählen"-Buttons ersetzen
+            document.querySelectorAll('.mt-auto').forEach(container => {
+                // Bestehende Formulare oder Buttons entfernen
+                while (container.firstChild) {
+                    container.firstChild.remove();
+                }
+                
+                // Aus der übergeordneten Karte den Plan-Typ bestimmen
+                const card = container.closest('.card');
+                if (!card) return;
+                
+                const cardHeader = card.querySelector('.card-header h5');
+                if (!cardHeader) return;
+                
+                const planTypeFromCard = cardHeader.textContent.trim().toLowerCase();
+                let formId, planValue;
+                
+                if (planTypeFromCard === 'premium') {
+                    formId = 'premiumPlanForm';
+                    planValue = 'premium';
+                } else if (planTypeFromCard === 'professional') {
+                    formId = 'proPlanForm';
+                    planValue = 'pro';
+                } else {
+                    formId = 'basicPlanForm';
+                    planValue = 'basic';
+                }
+                
+                // Wenn es der aktuelle Plan ist, "Aktuelles Abo"-Button erstellen
+                if ((newPlanType === 'premium' && planTypeFromCard === 'premium') ||
+                    (newPlanType === 'pro' && planTypeFromCard === 'professional') ||
+                    (newPlanType === 'basic' && planTypeFromCard === 'basic')) {
+                    
+                    // Karte hervorheben
+                    card.classList.add('border-primary');
+                    
+                    // "Aktuelles Abo"-Button erstellen
+                    const button = document.createElement('button');
+                    button.className = 'btn btn-primary';
+                    button.disabled = true;
+                    button.textContent = 'Aktuelles Abo';
+                    container.appendChild(button);
+                } else {
+                    // Ansonsten "Auswählen"-Formular erstellen
+                    const form = document.createElement('form');
+                    form.method = 'post';
+                    form.id = formId;
+                    form.innerHTML = `
+                        <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+                        <input type="hidden" name="abo_typ" value="${planValue}">
+                        <button type="submit" class="btn btn-outline-primary">Auswählen</button>
+                    `;
+                    
+                    // Formular hinzufügen
+                    container.appendChild(form);
+                    
+                    // Event-Listener hinzufügen
+                    form.addEventListener('submit', formSubmitHandler);
+                }
+            });
+            
+            // Aktuelle Abo-Info aktualisieren
+            let displayName, price;
+            
+            if (newPlanType === 'premium') {
+                displayName = 'Premium';
+                price = '3,99';
+            } else if (newPlanType === 'pro') {
+                displayName = 'Professional';
+                price = '8,99';
+            } else {
+                displayName = 'Basic';
+                price = '0,00';
+            }
+            
+            // Badge und Preis aktualisieren, wenn das Element existiert
+            const currentPlanBadge = document.querySelector('.current-plan .badge');
+            if (currentPlanBadge) {
+                currentPlanBadge.textContent = displayName;
+            }
+            
+            const currentPlanPrice = document.querySelector('.current-plan h5');
+            if (currentPlanPrice) {
+                currentPlanPrice.textContent = `${price} €/Monat`;
+            }
+            
+            // Kündigungsbutton anzeigen/verstecken
+            const cancelButton = document.getElementById('openCancelModalBtn')?.closest('.mt-4');
+            if (cancelButton) {
+                if (newPlanType === 'basic') {
+                    cancelButton.style.display = 'none';
+                } else {
+                    cancelButton.style.display = 'block';
+                }
+            }
+            
+            console.log("UI-Update abgeschlossen");
+        }
+        
+        // Helper-Funktion für Event-Listener der dynamisch erstellten Formulare
+        function formSubmitHandler(event) {
+            event.preventDefault();
+            
+            const planType = this.querySelector('input[name="abo_typ"]').value;
+            const planName = planType === 'premium' ? 'Premium' : (planType === 'pro' ? 'Professional' : 'Basic');
+            const formData = new FormData(this);
+            
+            // Deaktiviere alle Formular-Buttons während der Anfrage
+            document.querySelectorAll('button[type="submit"]').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            // AJAX-Request senden
+            fetch('{% url "abonnement_verwalten" %}', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                },
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Die UI sofort aktualisieren
+                    updateUIAfterSubscriptionChange(planType);
+                    
+                    // Kurze Verzögerung für die Erfolgsmeldung, damit die UI-Aktualisierung zuerst stattfindet
+                    setTimeout(() => {
+                        // Erfolgsmeldung anzeigen
+                        showToast(data.message);
+                    }, 100);
+                } else {
+                    showToast('Es ist ein Fehler aufgetreten.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Es gab ein Problem bei der Verbindung zum Server.');
+            })
+            .finally(() => {
+                // Buttons wieder aktivieren
+                document.querySelectorAll('button[type="submit"]').forEach(btn => {
+                    if (!btn.classList.contains('btn-primary')) { // Nicht den "Aktuelles Abo"-Button aktivieren
+                        btn.disabled = false;
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,149 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if is_new %}Neuen Geocache erstellen{% else %}Geocache bearbeiten{% endif %} - GeoTune
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}">Start</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'geocache_liste' %}">Geocaches</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        {% if is_new %}Neuen Geocache erstellen{% else %}{{ geocache.name }} bearbeiten{% endif %}
+                    </li>
+                </ol>
+            </nav>
+            
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0">
+                        {% if is_new %}
+                            <i class="bi bi-plus-circle"></i> Neuen Geocache erstellen
+                        {% else %}
+                            <i class="bi bi-pencil"></i> Geocache bearbeiten
+                        {% endif %}
+                    </h1>
+                </div>
+                
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                {{ form.name.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.help_text %}
+                                <div class="form-text">{{ form.name.help_text }}</div>
+                            {% endif %}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.beschreibung.id_for_label }}" class="form-label">
+                                {{ form.beschreibung.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.beschreibung }}
+                            {% if form.beschreibung.help_text %}
+                                <div class="form-text">{{ form.beschreibung.help_text }}</div>
+                            {% endif %}
+                            {% if form.beschreibung.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.beschreibung.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.koordinaten.id_for_label }}" class="form-label">
+                                {{ form.koordinaten.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.koordinaten }}
+                            {% if form.koordinaten.help_text %}
+                                <div class="form-text">{{ form.koordinaten.help_text }}</div>
+                            {% endif %}
+                            {% if form.koordinaten.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.koordinaten.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="mt-2">
+                                <a href="{% url 'playlist_standort_hinzufuegen' playlist_id=0 %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-plus-circle"></i> Neuen Standort erstellen
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.schwierigkeit.id_for_label }}" class="form-label">
+                                {{ form.schwierigkeit.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.schwierigkeit }}
+                            {% if form.schwierigkeit.help_text %}
+                                <div class="form-text">{{ form.schwierigkeit.help_text }}</div>
+                            {% endif %}
+                            {% if form.schwierigkeit.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.schwierigkeit.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.belohnung.id_for_label }}" class="form-label">
+                                {{ form.belohnung.label }}
+                            </label>
+                            {{ form.belohnung }}
+                            {% if form.belohnung.help_text %}
+                                <div class="form-text">{{ form.belohnung.help_text }}</div>
+                            {% endif %}
+                            {% if form.belohnung.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.belohnung.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'geocache_liste' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Zurück
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if is_new %}
+                                    <i class="bi bi-plus-circle"></i> Geocache erstellen
+                                {% else %}
+                                    <i class="bi bi-save"></i> Änderungen speichern
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,215 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+
+{% block title %}Events | GeoTune{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Hero Button Stile für Events-Seite */
+    .btn-hero {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.6rem 1.25rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-hero i {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-hero.primary {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .btn-hero.primary:hover {
+        background-color: var(--primary-dark);
+    }
+    
+    .btn-hero.accent {
+        background-color: var(--primary) !important;
+        color: white !important;
+        border-color: var(--primary) !important;
+    }
+    
+    .btn-hero.accent:hover {
+        background-color: var(--primary-dark) !important;
+    }
+    
+    .btn-hero.edit {
+        background-color: var(--gray-200);
+        color: var(--gray-700);
+        margin-right: 1rem;
+    }
+    
+    .btn-hero.edit:hover {
+        background-color: var(--gray-300);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-4">GeoTune Events</h1>
+            <p class="lead">
+                Entdecke spannende Musikveranstaltungen in deiner Nähe und verbinde dich mit anderen Musikliebhabern.
+            </p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'event_erstellen' %}" class="btn-hero accent mb-4">
+                    <i class="bi bi-plus-circle me-2"></i>Neues Event erstellen
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filter und Suche -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="get" action="{% url 'events' %}" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="suchbegriff" class="form-label">Suchbegriff</label>
+                            <input type="text" class="form-control" id="suchbegriff" name="q" 
+                                   value="{{ request.GET.q }}" placeholder="Nach Eventname suchen...">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="datumVon" class="form-label">Datum von</label>
+                            <input type="date" class="form-control" id="datumVon" name="datum_von" 
+                                   value="{{ request.GET.datum_von }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="datumBis" class="form-label">Datum bis</label>
+                            <input type="date" class="form-control" id="datumBis" name="datum_bis" 
+                                   value="{{ request.GET.datum_bis }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn-hero accent w-100">Suchen</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event-Liste -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% if events %}
+            {% for event in events %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        {% if event.bild %}
+                            <img src="{{ event.bild.url }}" class="card-img-top" alt="{{ event.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light text-center py-5">
+                                <i class="bi bi-music-note-beamed" style="font-size: 3rem;"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ event.name }}</h5>
+                            <p class="card-text text-muted mb-1">
+                                <i class="bi bi-calendar-event me-2"></i>{{ event.datum|date:"d.m.Y H:i" }}
+                            </p>
+                            <p class="card-text text-muted mb-3">
+                                <i class="bi bi-geo-alt me-2"></i>{{ event.ort }}
+                            </p>
+                            <p class="card-text">{{ event.beschreibung|truncatechars:100 }}</p>
+                            
+                            {% if event.partner %}
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        <i class="bi bi-award me-1"></i>Präsentiert von {{ event.partner.name }}
+                                    </small>
+                                </p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'event_detail' event.id %}" class="btn-hero edit">
+                                    <i class="bi bi-info-circle"></i>Details
+                                </a>
+                                
+                                {% if user in event.teilnehmer.all %}
+                                    <form method="post" action="{% url 'event_teilnehmen' event.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-hero accent">
+                                            <i class="bi bi-calendar-x"></i>Nicht mehr teilnehmen
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{% url 'event_teilnehmen' event.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-hero primary">
+                                            <i class="bi bi-calendar-check"></i>Teilnehmen
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle me-2"></i>Aktuell sind keine Events vorhanden.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if events.has_other_pages %}
+    <nav aria-label="Event-Navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if events.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ events.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.datum_von %}&datum_von={{ request.GET.datum_von }}{% endif %}{% if request.GET.datum_bis %}&datum_bis={{ request.GET.datum_bis }}{% endif %}" aria-label="Vorherige">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" aria-label="Vorherige">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+            
+            {% for i in events.paginator.page_range %}
+                {% if events.number == i %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.datum_von %}&datum_von={{ request.GET.datum_von }}{% endif %}{% if request.GET.datum_bis %}&datum_bis={{ request.GET.datum_bis }}{% endif %}">{{ i }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if events.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ events.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.datum_von %}&datum_von={{ request.GET.datum_von }}{% endif %}{% if request.GET.datum_bis %}&datum_bis={{ request.GET.datum_bis }}{% endif %}" aria-label="Nächste">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" aria-label="Nächste">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %} 

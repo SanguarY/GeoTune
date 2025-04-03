@@ -1,0 +1,182 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+
+{% block title %}Geocaches - GeoTune{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom card header styles (similar to feature-card-primary) */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Custom alert styles - clean gray style without accents */
+    .alert-custom-info {
+        color: var(--dark);
+        background-color: var(--gray-100);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+    }
+    
+    .alert-custom-info i {
+        color: var(--gray-600);
+        margin-right: 0.5rem;
+    }
+    
+    /* Geocache difficulty badges */
+    .badge.bg-1-schwierigkeit { color: #212529; }
+    .badge.bg-2-schwierigkeit { color: #212529; }
+    .badge.bg-3-schwierigkeit { color: #212529; }
+    .badge.bg-4-schwierigkeit { color: #212529; }
+    .badge.bg-5-schwierigkeit { color: #212529; }
+    
+    /* Geocache card styles */
+    .geocache-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-bottom: 1.5rem;
+    }
+    
+    .geocache-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .geocache-card .card-header {
+        border-bottom: none;
+        padding: 1.25rem 1.25rem 0.5rem;
+    }
+    
+    .geocache-card .card-body {
+        padding: 0.75rem 1.25rem;
+    }
+    
+    .geocache-card .card-footer {
+        background-color: transparent;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .geocache-card.found {
+        border-color: var(--success) !important;
+    }
+    
+    .geocache-card.found .card-footer.found-footer {
+        background-color: var(--success);
+        color: white;
+        padding: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card mb-4">
+                <div class="custom-card-header">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt-fill"></i> Geocaches</h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <p class="mb-0">Entdecke versteckte Geocaches in deiner Umgebung!</p>
+                        <a href="{% url 'geocache_erstellen' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Neuen Geocache erstellen
+                        </a>
+                    </div>
+                    
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-info-circle text-primary"></i> Geocaching mit GeoTune</h5>
+                            <p class="card-text">Bei GeoTune kannst du:</p>
+                            <ul>
+                                <li>Versteckte Musikschätze in deiner Umgebung finden</li>
+                                <li>Playlists in einem Radius von bis zu 20km <strong>sehen</strong></li>
+                                <li>Musik erst <strong>abspielen</strong>, wenn du näher als 500m bist</li>
+                                <li>Punkte sammeln und mit Freunden teilen</li>
+                            </ul>
+                            <p class="card-text small">Perfekt für Spaziergänge, Wanderungen oder Stadtausflüge!</p>
+                        </div>
+                    </div>
+                    
+                    {% if geocaches|default:False and geocaches|length > 0 %}
+                        <div class="row">
+                            {% for geocache in geocaches %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card geocache-card h-100 {% if geocache.id in gefundene_ids %}found{% endif %}">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-geo-alt-fill text-primary"></i> 
+                                            {{ geocache.name }}
+                                        </h5>
+                                        <span class="badge bg-{{ geocache.schwierigkeit|stringformat:'d'|add:'-schwierigkeit' }}">
+                                            {% for i in "12345"|make_list %}{% if forloop.counter <= geocache.schwierigkeit %}<i class="bi bi-star-fill text-dark"></i>{% else %}<i class="bi bi-star text-dark"></i>{% endif %}{% endfor %}
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text">{{ geocache.beschreibung|truncatechars:100 }}</p>
+                                        <p class="small text-muted">
+                                            <i class="bi bi-geo-alt"></i> {{ geocache.koordinaten.stadt }}, {{ geocache.koordinaten.land }}
+                                        </p>
+                                        <p class="small text-muted">
+                                            <i class="bi bi-gift-fill"></i> Belohnung: {{ geocache.belohnung }}
+                                        </p>
+                                    </div>
+                                    <div class="card-footer d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            Erstellt von: {{ geocache.erstellt_von.username }}
+                                        </small>
+                                        <a href="{% url 'geocache_detail' geocache_id=geocache.id %}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i> Details
+                                        </a>
+                                    </div>
+                                    {% if geocache.id in gefundene_ids %}
+                                    <div class="card-footer found-footer text-center">
+                                        <i class="bi bi-check-circle-fill"></i> Gefunden
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                    <div class="alert alert-custom-info">
+                        <h5><i class="bi bi-exclamation-triangle"></i> Geocaches sind nicht verfügbar</h5>
+                        <p>Die Geocache-Funktion scheint momentan nicht verfügbar zu sein. Bitte versuche Folgendes:</p>
+                        <ol>
+                            <li>Führe die Migrationen aus: <code>py -3.13 manage.py migrate</code></li>
+                            <li>Stelle sicher, dass die Datenbank korrekt eingerichtet ist</li>
+                            <li>Kontaktiere den Administrator, wenn das Problem weiterhin besteht</li>
+                        </ol>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

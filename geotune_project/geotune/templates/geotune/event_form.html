@@ -1,0 +1,265 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+    {% if is_new %}Neues Event erstellen{% else %}Event bearbeiten{% endif %} | GeoTune
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom card header styles (similar to playlists_in_der_naehe) */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h3, 
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Form styles */
+    .event-form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 0;
+    }
+    
+    .event-form-card {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        border: none;
+    }
+    
+    /* Form helper text */
+    .form-text {
+        color: var(--gray-600);
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+    
+    /* Alert style */
+    .alert-custom-info {
+        color: var(--dark);
+        background-color: var(--gray-100);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-custom-info i {
+        color: var(--primary);
+        margin-right: 0.5rem;
+    }
+    
+    /* Button styles */
+    .btn-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card event-form-card">
+                <div class="custom-card-header">
+                    <i class="fas fa-calendar-plus"></i>
+                    <h3 class="mb-0">
+                        {% if is_new %}Neues Event erstellen{% else %}Event "{{ event.name }}" bearbeiten{% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="alert alert-custom-info mb-4">
+                            <i class="fas fa-info-circle"></i> Fülle alle erforderlichen Felder aus, um dein Event zu erstellen. Die Teilnehmer können sich später für dein Event anmelden.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                <i class="fas fa-tag text-primary me-2"></i>{{ form.name.label }}
+                            </label>
+                            {{ form.name|add_class:"form-control" }}
+                            {% if form.name.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.beschreibung.id_for_label }}" class="form-label">
+                                <i class="fas fa-align-left text-primary me-2"></i>{{ form.beschreibung.label }}
+                            </label>
+                            {{ form.beschreibung|add_class:"form-control" }}
+                            {% if form.beschreibung.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.beschreibung.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Beschreibe das Event. Was erwartet die Teilnehmer?</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.datum.id_for_label }}" class="form-label">
+                                <i class="fas fa-calendar-alt text-primary me-2"></i>{{ form.datum.label }}
+                            </label>
+                            {{ form.datum|add_class:"form-control" }}
+                            {% if form.datum.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.datum.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.ort.id_for_label }}" class="form-label">
+                                <i class="fas fa-map-marker-alt text-primary me-2"></i>{{ form.ort.label }}
+                            </label>
+                            {{ form.ort|add_class:"form-select" }}
+                            {% if form.ort.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.ort.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <a href="{% url 'playlist_standort_hinzufuegen' 0 %}" target="_blank" class="text-primary">
+                                    <i class="fas fa-plus-circle"></i> Neuen Standort erstellen
+                                </a>
+                                (danach diese Seite neu laden)
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.max_teilnehmer.id_for_label }}" class="form-label">
+                                <i class="fas fa-users text-primary me-2"></i>{{ form.max_teilnehmer.label }}
+                            </label>
+                            {{ form.max_teilnehmer|add_class:"form-control" }}
+                            {% if form.max_teilnehmer.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.max_teilnehmer.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.max_teilnehmer.help_text }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.partner.id_for_label }}" class="form-label">
+                                <i class="fas fa-handshake text-primary me-2"></i>{{ form.partner.label }}
+                            </label>
+                            {{ form.partner|add_class:"form-select" }}
+                            {% if form.partner.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.partner.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.partner.help_text }}</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.bild.id_for_label }}" class="form-label">
+                                <i class="fas fa-image text-primary me-2"></i>{{ form.bild.label }}
+                            </label>
+                            {% if event.bild %}
+                                <div class="mb-2">
+                                    <img src="{{ event.bild.url }}" alt="{{ event.name }}" class="img-thumbnail" style="max-height: 200px;">
+                                </div>
+                            {% endif %}
+                            {{ form.bild|add_class:"form-control" }}
+                            {% if form.bild.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.bild.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% if is_new %}{% url 'events' %}{% else %}{% url 'event_detail' event.id %}{% endif %}" class="btn btn-outline-secondary btn-lg px-4">
+                                <i class="fas fa-arrow-left me-2"></i>Zurück
+                            </a>
+                            <button type="submit" class="btn-primary btn-lg px-4">
+                                {% if is_new %}Event erstellen{% else %}Änderungen speichern{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Datum-Zeitfeld initialisieren
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wenn ein Datums-/Zeitfeld vorhanden ist, aktuelles Datum/Zeit als Mindestwert setzen
+        const dateTimeInput = document.querySelector('input[type="datetime-local"]');
+        if (dateTimeInput) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            
+            // Format: YYYY-MM-DDThh:mm
+            const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            dateTimeInput.min = minDateTime;
+        }
+    });
+</script>
+{% endblock %} 

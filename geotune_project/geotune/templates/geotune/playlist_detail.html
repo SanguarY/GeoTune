@@ -671,8 +671,8 @@
             if (typeof initAddSongForm === 'function') {
                 initAddSongForm();
             }
-            if (typeof initEditSongButtons === 'function') {
-                initEditSongButtons();
+            if (typeof initEditSongForm === 'function') {
+                initEditSongForm();
             }
             if (typeof initDeleteSongButtons === 'function') {
                 initDeleteSongButtons();
@@ -753,486 +753,251 @@
                 return;
             }
             
-            // Show loading state
+            // Loading State anzeigen
             const submitBtn = document.getElementById('add-song-btn');
             const originalBtnContent = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             submitBtn.disabled = true;
             
-            // Get form data
+            // FormData-Objekt erstellen
             const formData = new FormData(songForm);
             
-            // Send AJAX request
-            fetch('', {
+            // CSRF-Token explizit hinzufügen
+            if (!formData.has('csrfmiddlewaretoken')) {
+                formData.append('csrfmiddlewaretoken', window.csrfToken);
+            }
+            
+            // Debug log
+            console.log('Sending request to:', `/playlist/${window.playlistId}/`);
+            
+            // AJAX-Anfrage senden
+            fetch(`/playlist/${window.playlistId}/`, {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    // Do not set Content-Type when using FormData
+                    'X-CSRFToken': window.csrfToken
                 },
                 credentials: 'same-origin'
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    console.error('Server response error:', response.status, response.statusText);
+                    throw new Error(`Server responded with status: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
+                console.log('Success data:', data); // Debug log
                 if (data.success) {
-                    // Create song item HTML with proper formatting
-                    const songNumber = songList ? songList.querySelectorAll('.song-item').length + 1 : 1;
-                    const minutes = Math.floor(data.lied.dauer / 60);
-                    const seconds = data.lied.dauer % 60;
-                    const formattedDuration = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                    // Formular zurücksetzen
+                    songForm.reset();
                     
-                    // Create new song element
-                    const newSong = document.createElement('div');
-                    newSong.className = 'song-item';
-                    
-                    // Build song item HTML
-                    let songHtml = '<div class="song-number">' + songNumber + '</div>';
-                    songHtml += '<div class="song-cover">';
-                    
-                    if (data.lied.cover_bild) {
-                        songHtml += '<img src="' + data.lied.cover_bild + '" alt="Cover von ' + data.lied.titel + '">';
-                    } else {
-                        songHtml += '<div class="song-cover-placeholder"><i class="fas fa-music"></i></div>';
-                    }
-                    
-                    songHtml += '</div>';
-                    songHtml += '<div class="song-info">';
-                    songHtml += '<div class="song-title">';
-                    
-                    if (data.lied.externe_url) {
-                        songHtml += '<a href="' + data.lied.externe_url + '" target="_blank" rel="noopener">';
-                        songHtml += data.lied.titel;
-                        songHtml += '<i class="fas fa-external-link-alt"></i>';
-                        songHtml += '</a>';
-                    } else {
-                        songHtml += data.lied.titel;
-                    }
-                    
-                    songHtml += '</div>';
-                    songHtml += '<div class="song-details">';
-                    songHtml += '<span class="song-artist">' + data.lied.kuenstler + '</span>';
-                    
-                    if (data.lied.album) {
-                        songHtml += '<span class="song-album d-none d-md-inline">' + data.lied.album + '</span>';
-                    }
-                    
-                    songHtml += '<span class="song-added-by d-none d-md-inline">';
-                    songHtml += 'Hinzugefügt von <a href="' + window.userProfileUrl + '">' + window.username + '</a>';
-                    songHtml += '</span>';
-                    songHtml += '</div>';
-                    songHtml += '</div>';
-                    songHtml += '<div class="song-duration">' + formattedDuration + '</div>';
-                    
-                    newSong.innerHTML = songHtml;
-                    
-                    // If empty state exists, replace it with song list
-                    if (emptyState) {
-                        // Get the songs section container
-                        const songsSectionContainer = document.querySelector('.content-section:first-child');
-                        
-                        // Create new song list
-                        const newSongList = document.createElement('div');
-                        newSongList.className = 'song-list';
-                        newSongList.appendChild(newSong);
-                        
-                        // Replace empty state with song list
-                        songsSectionContainer.removeChild(emptyState);
-                        songsSectionContainer.appendChild(newSongList);
-                    } else if (songList) {
-                        // Add to existing song list
-                        songList.appendChild(newSong);
-                    }
-                    
-                    // Update song count in meta information
-                    if (songCount) {
-                        const currentCount = parseInt(songCount.textContent.split(' ')[0]) || 0;
-                        songCount.textContent = (currentCount + 1) + ' Lieder';
-                    }
-                    
-                    // Close the modal
+                    // Modal schließen
                     const bsModal = bootstrap.Modal.getInstance(addSongModal);
                     bsModal.hide();
                     
-                    // Reset form
-                    songForm.reset();
+                    // Lied zur Liste hinzufügen
+                    if (emptyState) {
+                        // Leerer Zustand entfernen und durch Lieder-Liste ersetzen
+                        const contentSection = emptyState.closest('.content-section');
+                        emptyState.remove();
+                        
+                        // Neue Liste erstellen
+                        const newSongList = document.createElement('div');
+                        newSongList.className = 'song-list';
+                        contentSection.appendChild(newSongList);
+                        
+                        // Referenz aktualisieren
+                        songList = newSongList;
+                    }
                     
-                    // Show success message
-                    showToast('Lied erfolgreich hinzugefügt!');
+                    // Neues Lied zur Liste hinzufügen
+                    const songCount = document.querySelectorAll('.song-item').length + 1;
+                    const newSongItem = createSongItem(data.lied, songCount);
+                    songList.appendChild(newSongItem);
+                    
+                    // Song-Zähler aktualisieren
+                    updateSongCount(1);
+                    
+                    // Erfolg melden
+                    showToast(data.message || 'Lied erfolgreich hinzugefügt!');
+                    
+                    // Event-Listener für Edit- und Delete-Buttons des neuen Elements hinzufügen
+                    // Wichtig: Das DOM-Element muss vollständig geladen sein, bevor wir die Listener hinzufügen
+                    setTimeout(function() {
+                        initSingleSongEditButtons(newSongItem);
+                        initSingleSongDeleteButtons(newSongItem);
+                    }, 100);
                 } else {
                     showToast(data.error || 'Fehler beim Hinzufügen des Liedes.');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showToast('Fehler bei der Verbindung zum Server');
+                console.error('Error details:', error);
+                let errorMsg = 'Fehler bei der Verbindung zum Server';
+                if (error && error.message) {
+                    errorMsg += ': ' + error.message;
+                }
+                showToast(errorMsg);
             })
             .finally(() => {
-                // Restore button state
+                // Button-Status wiederherstellen
                 submitBtn.innerHTML = originalBtnContent;
                 submitBtn.disabled = false;
             });
         });
-        
-        // Event-Listener für Modal-Events hinzufügen
-        addSongModal.addEventListener('hidden.bs.modal', function () {
-            // Form zurücksetzen wenn Modal geschlossen wird
-            songForm.reset();
-        });
-        
-        // Sicherstellen, dass das Modal nach dem Schließen wieder richtig funktioniert
-        addSongModal.addEventListener('hidden.bs.modal', function () {
-            setTimeout(() => {
-                // Eventuelle Dead-Listeners entfernen
-                const oldInstance = bootstrap.Modal.getInstance(addSongModal);
-                if (oldInstance) {
-                    oldInstance.dispose();
-                }
-            }, 100);
-        });
     }
     
-    // Initialize edit song buttons and form with AJAX submission
-    function initEditSongButtons() {
-        const songItems = document.querySelectorAll('.song-item');
-        const editSongModal = document.getElementById('editSongModal');
-        const editSongForm = document.getElementById('edit-song-form');
+    // Hilfsfunktion zum Erstellen eines neuen Song-Items
+    function createSongItem(lied, number) {
+        const songItem = document.createElement('div');
+        songItem.className = 'song-item';
         
-        if (!songItems.length || !editSongModal || !editSongForm) return;
+        // HTML für das Lied-Element erstellen
+        let html = `
+            <div class="song-number">${number}</div>
+            <div class="song-cover">
+                ${lied.cover_bild ? `<img src="${lied.cover_bild}" alt="Cover von ${lied.titel}">` : '<div class="song-cover-placeholder"><i class="fas fa-music"></i></div>'}
+            </div>
+            <div class="song-info">
+                <div class="song-title">
+                    ${lied.externe_url ? `<a href="${lied.externe_url}" target="_blank" rel="noopener">${lied.titel}<i class="fas fa-external-link-alt"></i></a>` : lied.titel}
+                </div>
+                <div class="song-details">
+                    <span class="song-artist">{{ lied.kuenstler }}</span>
+                    ${lied.album ? `<span class="song-album d-none d-md-inline">${lied.album}</span>` : ''}
+                    <span class="song-added-by d-none d-md-inline">
+                        Hinzugefügt von 
+                        <a href="${window.userProfileUrl}">
+                            `+ window.username +`
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="song-duration">
+                ${Math.floor(lied.dauer / 60)}:${(lied.dauer % 60).toString().padStart(2, '0')}
+            </div>
+            <div class="song-actions">
+                <button type="button" class="btn-icon edit-song" data-lied-id="${lied.id}" title="Lied bearbeiten">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn-icon delete-song" data-lied-id="${lied.id}" title="Lied löschen">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `;
         
-        const editButtons = document.querySelectorAll('.edit-song');
+        songItem.innerHTML = html;
+        return songItem;
+    }
+    
+    // Hilfsfunktion zum Aktualisieren des Lied-Zählers
+    function updateSongCount(delta) {
+        const songCountElement = document.querySelector('.playlist-meta-item .fa-music').parentNode.querySelector('span');
+        if (songCountElement) {
+            const currentCount = parseInt(songCountElement.textContent.split(' ')[0]) || 0;
+            songCountElement.textContent = (currentCount + delta) + ' Lieder';
+        }
+    }
+    
+    // Hilfsfunktion zum Initialisieren der Edit-Buttons für ein einzelnes Lied
+    function initSingleSongEditButtons(songItem) {
+        const editButton = songItem.querySelector('.edit-song');
+        if (!editButton) return;
         
-        // Event-Listener für Edit-Buttons
-        editButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const liedId = this.getAttribute('data-lied-id');
-                
-                // Visual feedback when button is clicked
-                this.classList.add('active');
-                const originalContent = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                
-                // Lied-Daten per AJAX laden
-                fetch(`/playlist/${window.playlistId}/lied/${liedId}/bearbeiten/`, {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Restore button state
-                    this.innerHTML = originalContent;
-                    this.classList.remove('active');
-                    
-                    if (data.success) {
-                        // Formular mit den Lieddaten befüllen
-                        document.getElementById('edit-lied-id').value = data.lied.id;
-                        document.getElementById('edit-titel').value = data.lied.titel;
-                        document.getElementById('edit-kuenstler').value = data.lied.kuenstler;
-                        document.getElementById('edit-album').value = data.lied.album || '';
-                        document.getElementById('edit-dauer-format').value = data.lied.dauer_format;
-                        document.getElementById('edit-dauer-sekunden').value = data.lied.dauer;
-                        document.getElementById('edit-externe-url').value = data.lied.externe_url || '';
-                        document.getElementById('edit-cover-bild').value = data.lied.cover_bild || '';
-                        
-                        // Modal öffnen
-                        const bsModal = new bootstrap.Modal(editSongModal);
-                        bsModal.show();
-                    } else {
-                        showToast(data.error || 'Fehler beim Laden der Lieddaten');
-                    }
-                })
-                .catch(error => {
-                    // Restore button state on error
-                    this.innerHTML = originalContent;
-                    this.classList.remove('active');
-                    
-                    console.error('Error:', error);
-                    showToast('Fehler bei der Verbindung zum Server');
-                });
-            });
-        });
+        // Vermeidung doppelter Event-Listener durch zuerst entfernen etwaiger bereits vorhandener
+        const oldEditButton = editButton.cloneNode(true);
+        editButton.parentNode.replaceChild(oldEditButton, editButton);
         
-        // Event-Listener für das Formular
-        editSongForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+        oldEditButton.addEventListener('click', function() {
+            const liedId = this.getAttribute('data-lied-id');
             
-            // Lied-ID aus dem versteckten Feld holen
-            const liedId = document.getElementById('edit-lied-id').value;
+            // Visuelles Feedback beim Klick auf den Button
+            this.classList.add('active');
+            const originalContent = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             
-            // Dauer validieren und umwandeln
-            const durationFormat = document.getElementById('edit-dauer-format');
-            const durationSeconds = document.getElementById('edit-dauer-sekunden');
-            const durationPattern = /^([0-9]{1,2}):([0-5][0-9])$/;
-            const durationValue = durationFormat.value.trim();
-            
-            if (!durationPattern.test(durationValue)) {
-                durationFormat.setCustomValidity('Bitte gib die Dauer im Format MM:SS ein (z.B. 3:45)');
-                durationFormat.reportValidity();
-                return;
-            }
-            
-            // MM:SS in Sekunden umwandeln
-            const [minutes, seconds] = durationValue.split(':').map(Number);
-            const totalSeconds = (minutes * 60) + seconds;
-            durationSeconds.value = totalSeconds;
-            
-            // Formular auf allgemeine Gültigkeit prüfen
-            if (!editSongForm.checkValidity()) {
-                editSongForm.reportValidity();
-                return;
-            }
-            
-            // Show loading state
-            const submitBtn = document.getElementById('edit-song-btn');
-            const originalBtnContent = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            submitBtn.disabled = true;
-            
-            // Get form data
-            const formData = new FormData(editSongForm);
-            
-            // Send AJAX request
+            // Lied-Daten per AJAX laden
             fetch(`/playlist/${window.playlistId}/lied/${liedId}/bearbeiten/`, {
-                method: 'POST',
-                body: formData,
+                method: 'GET',
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': window.csrfToken
                 },
                 credentials: 'same-origin'
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    console.error('Server response error on edit:', response.status, response.statusText);
+                    throw new Error(`Server responded with status: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
+                // Button-Status wiederherstellen
+                this.innerHTML = originalContent;
+                this.classList.remove('active');
+                
                 if (data.success) {
-                    // Aktualisiere das Lied in der Liste
-                    updateSongInList(liedId, data.lied);
+                    // Formular mit den Lieddaten befüllen
+                    document.getElementById('edit-lied-id').value = data.lied.id;
+                    document.getElementById('edit-titel').value = data.lied.titel;
+                    document.getElementById('edit-kuenstler').value = data.lied.kuenstler;
+                    document.getElementById('edit-album').value = data.lied.album || '';
+                    document.getElementById('edit-dauer-format').value = data.lied.dauer_format;
+                    document.getElementById('edit-dauer-sekunden').value = data.lied.dauer;
+                    document.getElementById('edit-externe-url').value = data.lied.externe_url || '';
+                    document.getElementById('edit-cover-bild').value = data.lied.cover_bild || '';
                     
-                    // Close the modal
-                    const bsModal = bootstrap.Modal.getInstance(editSongModal);
-                    bsModal.hide();
-                    
-                    // Reset form
-                    editSongForm.reset();
-                    
-                    // Show success message
-                    showToast(data.message || 'Lied erfolgreich aktualisiert!');
+                    // Modal öffnen
+                    const editSongModal = document.getElementById('editSongModal');
+                    const bsModal = new bootstrap.Modal(editSongModal);
+                    bsModal.show();
                 } else {
-                    showToast(data.error || 'Fehler beim Aktualisieren des Liedes.');
+                    showToast(data.error || 'Fehler beim Laden der Lieddaten');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showToast('Fehler bei der Verbindung zum Server');
-            })
-            .finally(() => {
-                // Restore button state
-                submitBtn.innerHTML = originalBtnContent;
-                submitBtn.disabled = false;
+                // Restore button state on error
+                this.innerHTML = originalContent;
+                this.classList.remove('active');
+                
+                console.error('Error details:', error);
+                let errorMsg = 'Fehler bei der Verbindung zum Server';
+                if (error && error.message) {
+                    errorMsg += ': ' + error.message;
+                }
+                showToast(errorMsg);
             });
-        });
-        
-        // Event-Listener für Modal-Events hinzufügen
-        editSongModal.addEventListener('hidden.bs.modal', function () {
-            // Form zurücksetzen wenn Modal geschlossen wird
-            editSongForm.reset();
         });
     }
     
-    // Helper-Funktion zum Aktualisieren eines Liedes in der Liste
-    function updateSongInList(liedId, liedData) {
-        // Finde das Lied-Element in der Liste
-        const songItem = document.querySelector(`.song-item .edit-song[data-lied-id="${liedId}"]`).closest('.song-item');
-        if (!songItem) return;
+    // Hilfsfunktion zum Initialisieren der Delete-Buttons für ein einzelnes Lied
+    function initSingleSongDeleteButtons(songItem) {
+        const deleteButton = songItem.querySelector('.delete-song');
+        if (!deleteButton) return;
         
-        // Aktualisiere die Lieddaten im DOM
-        const titleElement = songItem.querySelector('.song-title');
-        const artistElement = songItem.querySelector('.song-artist');
-        const albumElement = songItem.querySelector('.song-album');
-        const durationElement = songItem.querySelector('.song-duration');
+        // Vermeidung doppelter Event-Listener durch zuerst entfernen etwaiger bereits vorhandener
+        const oldDeleteButton = deleteButton.cloneNode(true);
+        deleteButton.parentNode.replaceChild(oldDeleteButton, deleteButton);
         
-        if (titleElement) {
-            if (liedData.externe_url) {
-                titleElement.innerHTML = `<a href="${liedData.externe_url}" target="_blank" rel="noopener">${liedData.titel}<i class="fas fa-external-link-alt"></i></a>`;
-            } else {
-                titleElement.textContent = liedData.titel;
-            }
-        }
-        
-        if (artistElement) {
-            artistElement.textContent = liedData.kuenstler;
-        }
-        
-        if (albumElement && liedData.album) {
-            albumElement.textContent = liedData.album;
-        }
-        
-        if (durationElement) {
-            const minutes = Math.floor(liedData.dauer / 60);
-            const seconds = liedData.dauer % 60;
-            durationElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-        }
-        
-        // Aktualisiere Cover-Bild, falls vorhanden
-        const coverElement = songItem.querySelector('.song-cover');
-        if (coverElement) {
-            if (liedData.cover_bild) {
-                coverElement.innerHTML = `<img src="${liedData.cover_bild}" alt="Cover von ${liedData.titel}">`;
-            } else {
-                coverElement.innerHTML = '<div class="song-cover-placeholder"><i class="fas fa-music"></i></div>';
-            }
-        }
-    }
-    
-    // Initialize delete song buttons with confirmation and AJAX
-    function initDeleteSongButtons() {
-        const deleteButtons = document.querySelectorAll('.delete-song');
-        const deleteModal = document.getElementById('deleteSongModal');
-        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-        
-        if (!deleteButtons.length || !deleteModal || !confirmDeleteBtn) return;
-        
-        // Initialize the Bootstrap modal
-        const bsDeleteModal = new bootstrap.Modal(deleteModal);
-        
-        // Event handler for delete buttons
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const liedId = this.getAttribute('data-lied-id');
-                const songItem = this.closest('.song-item');
-                const songTitle = songItem.querySelector('.song-title').textContent.trim();
-                
-                // Set the song title in the modal
-                deleteModal.querySelector('.song-title-display').textContent = songTitle;
-                
-                // Store the liedId and button reference on the modal for later use
-                deleteModal.setAttribute('data-lied-id', liedId);
-                deleteModal.setAttribute('data-button-id', this.getAttribute('data-lied-id'));
-                
-                // Show the modal
-                bsDeleteModal.show();
-            });
-        });
-        
-        // Event handler for the confirm delete button
-        confirmDeleteBtn.addEventListener('click', function() {
-            // Get the stored liedId and find the original button
-            const liedId = deleteModal.getAttribute('data-lied-id');
-            const originalButton = document.querySelector(`.delete-song[data-lied-id="${liedId}"]`);
-            const songItem = originalButton.closest('.song-item');
+        oldDeleteButton.addEventListener('click', function() {
+            const liedId = this.getAttribute('data-lied-id');
+            const songTitle = songItem.querySelector('.song-title').textContent.trim();
             
-            // Hide the modal
-            bsDeleteModal.hide();
+            // Set the song title in the modal
+            const deleteModal = document.getElementById('deleteSongModal');
+            deleteModal.querySelector('.song-title-display').textContent = songTitle;
             
-            // Visual feedback during deletion
-            originalButton.classList.add('active');
-            originalButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            songItem.classList.add('deleting');
+            // Store the liedId and button reference on the modal for later use
+            deleteModal.setAttribute('data-lied-id', liedId);
+            deleteModal.setAttribute('data-button-id', this.getAttribute('data-lied-id'));
             
-            // FormData mit CSRF-Token erstellen
-            const formData = new FormData();
-            formData.append('csrfmiddlewaretoken', window.csrfToken);
-            
-            // AJAX-Anfrage zum Löschen des Liedes
-            fetch(`/playlist/${window.playlistId}/lied/${liedId}/loeschen/`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    // Smooth fade-out animation
-                    songItem.style.transition = 'all 0.3s ease';
-                    songItem.style.maxHeight = '0';
-                    songItem.style.opacity = '0';
-                    
-                    setTimeout(() => {
-                        // Lied aus der Liste entfernen
-                        const songList = document.querySelector('.song-list');
-                        songItem.remove();
-                        
-                        // Überprüfen, ob die Liste jetzt leer ist
-                        if (songList && !songList.querySelector('.song-item')) {
-                            // Leere Liste durch Empty-State ersetzen
-                            const songSection = songList.closest('.content-section');
-                            songList.remove();
-                            
-                            // Empty-State-HTML erstellen
-                            const emptyState = document.createElement('div');
-                            emptyState.className = 'empty-state';
-                            emptyState.innerHTML = `
-                                <div class="empty-state-icon">
-                                    <i class="fas fa-music"></i>
-                                </div>
-                                <h3>Keine Lieder</h3>
-                                <p>Diese Playlist enthält noch keine Lieder.</p>
-                                
-                                <button type="button" class="btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSongModal">
-                                    <i class="fas fa-plus"></i> Erstes Lied hinzufügen
-                                </button>
-                            `;
-                            
-                            songSection.appendChild(emptyState);
-                        } else {
-                            // Song-Nummern aktualisieren
-                            const remainingSongs = document.querySelectorAll('.song-item');
-                            remainingSongs.forEach((song, index) => {
-                                const numberElement = song.querySelector('.song-number');
-                                if (numberElement) {
-                                    numberElement.textContent = (index + 1).toString();
-                                }
-                            });
-                        }
-                        
-                        // Song-Zähler in der Playlist-Meta aktualisieren
-                        const songCount = document.querySelector('.playlist-meta-item .fa-music').parentNode.querySelector('span');
-                        if (songCount) {
-                            const currentCount = parseInt(songCount.textContent.split(' ')[0]) || 0;
-                            songCount.textContent = (currentCount - 1) + ' Lieder';
-                        }
-                    }, 300);
-                    
-                    // Erfolgsmeldung anzeigen
-                    showToast(data.message || 'Lied erfolgreich aus der Playlist entfernt!');
-                } else {
-                    // Restore item state on error
-                    originalButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
-                    originalButton.classList.remove('active');
-                    songItem.classList.remove('deleting');
-                    showToast(data.error || 'Fehler beim Entfernen des Liedes.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Restore item state on error
-                originalButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
-                originalButton.classList.remove('active');
-                songItem.classList.remove('deleting');
-                showToast('Fehler bei der Verbindung zum Server');
-            });
+            // Show the modal
+            const bsDeleteModal = new bootstrap.Modal(deleteModal);
+            bsDeleteModal.show();
         });
     }
     
@@ -1438,6 +1203,290 @@
                 favoriteBtn.innerHTML = originalState.content;
                 favoriteBtn.disabled = false;
                 showToast('Fehler bei der Verbindung zum Server');
+            });
+        });
+    }
+
+    // Initialize edit song form with AJAX submission
+    function initEditSongForm() {
+        const editSongForm = document.getElementById('edit-song-form');
+        const editSongModal = document.getElementById('editSongModal');
+        
+        if (!editSongForm || !editSongModal) return;
+        
+        // Event-Listener für das Formular
+        editSongForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Lied-ID aus dem versteckten Feld holen
+            const liedId = document.getElementById('edit-lied-id').value;
+            
+            // Dauer validieren und umwandeln
+            const durationFormat = document.getElementById('edit-dauer-format');
+            const durationSeconds = document.getElementById('edit-dauer-sekunden');
+            const durationPattern = /^([0-9]{1,2}):([0-5][0-9])$/;
+            const durationValue = durationFormat.value.trim();
+            
+            if (!durationPattern.test(durationValue)) {
+                durationFormat.setCustomValidity('Bitte gib die Dauer im Format MM:SS ein (z.B. 3:45)');
+                durationFormat.reportValidity();
+                return;
+            }
+            
+            // MM:SS in Sekunden umwandeln
+            const [minutes, seconds] = durationValue.split(':').map(Number);
+            const totalSeconds = (minutes * 60) + seconds;
+            durationSeconds.value = totalSeconds;
+            
+            // Formular auf allgemeine Gültigkeit prüfen
+            if (!editSongForm.checkValidity()) {
+                editSongForm.reportValidity();
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = document.getElementById('edit-song-btn');
+            const originalBtnContent = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            submitBtn.disabled = true;
+            
+            // Get form data
+            const formData = new FormData(editSongForm);
+            
+            // Send AJAX request
+            fetch(`/playlist/${window.playlistId}/lied/${liedId}/bearbeiten/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': window.csrfToken
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Aktualisiere das Lied in der Liste
+                    updateSongInList(liedId, data.lied);
+                    
+                    // Close the modal
+                    const bsModal = bootstrap.Modal.getInstance(editSongModal);
+                    bsModal.hide();
+                    
+                    // Reset form
+                    editSongForm.reset();
+                    
+                    // Show success message
+                    showToast(data.message || 'Lied erfolgreich aktualisiert!');
+                } else {
+                    showToast(data.error || 'Fehler beim Aktualisieren des Liedes.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Fehler bei der Verbindung zum Server');
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalBtnContent;
+                submitBtn.disabled = false;
+            });
+        });
+        
+        // Event-Listener für Modal-Events hinzufügen
+        editSongModal.addEventListener('hidden.bs.modal', function () {
+            // Form zurücksetzen wenn Modal geschlossen wird
+            editSongForm.reset();
+        });
+    }
+    
+    // Helper-Funktion zum Aktualisieren eines Liedes in der Liste
+    function updateSongInList(liedId, liedData) {
+        // Finde das Lied-Element in der Liste
+        const songItem = document.querySelector(`.song-item .edit-song[data-lied-id="${liedId}"]`).closest('.song-item');
+        if (!songItem) return;
+        
+        // Aktualisiere die Lieddaten im DOM
+        const titleElement = songItem.querySelector('.song-title');
+        const artistElement = songItem.querySelector('.song-artist');
+        const albumElement = songItem.querySelector('.song-album');
+        const durationElement = songItem.querySelector('.song-duration');
+        
+        if (titleElement) {
+            if (liedData.externe_url) {
+                titleElement.innerHTML = `<a href="${liedData.externe_url}" target="_blank" rel="noopener">${liedData.titel}<i class="fas fa-external-link-alt"></i></a>`;
+            } else {
+                titleElement.textContent = liedData.titel;
+            }
+        }
+        
+        if (artistElement) {
+            artistElement.textContent = liedData.kuenstler;
+        }
+        
+        if (albumElement && liedData.album) {
+            albumElement.textContent = liedData.album;
+        }
+        
+        if (durationElement) {
+            const minutes = Math.floor(liedData.dauer / 60);
+            const seconds = liedData.dauer % 60;
+            durationElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+        
+        // Aktualisiere Cover-Bild, falls vorhanden
+        const coverElement = songItem.querySelector('.song-cover');
+        if (coverElement) {
+            if (liedData.cover_bild) {
+                coverElement.innerHTML = `<img src="${liedData.cover_bild}" alt="Cover von ${liedData.titel}">`;
+            } else {
+                coverElement.innerHTML = '<div class="song-cover-placeholder"><i class="fas fa-music"></i></div>';
+            }
+        }
+    }
+    
+    // Initialize delete song buttons with confirmation and AJAX
+    function initDeleteSongButtons() {
+        const deleteButtons = document.querySelectorAll('.delete-song');
+        const deleteModal = document.getElementById('deleteSongModal');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        
+        if (!deleteButtons.length || !deleteModal || !confirmDeleteBtn) return;
+        
+        // Initialize the Bootstrap modal
+        const bsDeleteModal = new bootstrap.Modal(deleteModal);
+        
+        // Event handler for delete buttons
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const liedId = this.getAttribute('data-lied-id');
+                const songItem = this.closest('.song-item');
+                const songTitle = songItem.querySelector('.song-title').textContent.trim();
+                
+                // Set the song title in the modal
+                deleteModal.querySelector('.song-title-display').textContent = songTitle;
+                
+                // Store the liedId and button reference on the modal for later use
+                deleteModal.setAttribute('data-lied-id', liedId);
+                deleteModal.setAttribute('data-button-id', this.getAttribute('data-lied-id'));
+                
+                // Show the modal
+                bsDeleteModal.show();
+            });
+        });
+        
+        // Event handler for the confirm delete button
+        confirmDeleteBtn.addEventListener('click', function() {
+            // Get the stored liedId and find the original button
+            const liedId = deleteModal.getAttribute('data-lied-id');
+            const originalButton = document.querySelector(`.delete-song[data-lied-id="${liedId}"]`);
+            const songItem = originalButton.closest('.song-item');
+            
+            // Hide the modal
+            bsDeleteModal.hide();
+            
+            // Visual feedback during deletion
+            originalButton.classList.add('active');
+            originalButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            songItem.classList.add('deleting');
+            
+            // FormData mit CSRF-Token erstellen
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', window.csrfToken);
+            
+            // AJAX-Anfrage zum Löschen des Liedes
+            fetch(`/playlist/${window.playlistId}/lied/${liedId}/loeschen/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': window.csrfToken
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Server response error on delete:', response.status, response.statusText);
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Smooth fade-out animation
+                    songItem.style.transition = 'all 0.3s ease';
+                    songItem.style.maxHeight = '0';
+                    songItem.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        // Lied aus der Liste entfernen
+                        const songList = document.querySelector('.song-list');
+                        songItem.remove();
+                        
+                        // Überprüfen, ob die Liste jetzt leer ist
+                        if (songList && !songList.querySelector('.song-item')) {
+                            // Leere Liste durch Empty-State ersetzen
+                            const songSection = songList.closest('.content-section');
+                            songList.remove();
+                            
+                            // Empty-State-HTML erstellen
+                            const emptyState = document.createElement('div');
+                            emptyState.className = 'empty-state';
+                            emptyState.innerHTML = `
+                                <div class="empty-state-icon">
+                                    <i class="fas fa-music"></i>
+                                </div>
+                                <h3>Keine Lieder</h3>
+                                <p>Diese Playlist enthält noch keine Lieder.</p>
+                                
+                                <button type="button" class="btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSongModal">
+                                    <i class="fas fa-plus"></i> Erstes Lied hinzufügen
+                                </button>
+                            `;
+                            
+                            songSection.appendChild(emptyState);
+                        } else {
+                            // Song-Nummern aktualisieren
+                            const remainingSongs = document.querySelectorAll('.song-item');
+                            remainingSongs.forEach((song, index) => {
+                                const numberElement = song.querySelector('.song-number');
+                                if (numberElement) {
+                                    numberElement.textContent = (index + 1).toString();
+                                }
+                            });
+                        }
+                        
+                        // Song-Zähler aktualisieren
+                        updateSongCount(-1);
+                    }, 300);
+                    
+                    // Erfolgsmeldung anzeigen
+                    showToast(data.message || 'Lied erfolgreich aus der Playlist entfernt!');
+                } else {
+                    // Restore item state on error
+                    originalButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                    originalButton.classList.remove('active');
+                    songItem.classList.remove('deleting');
+                    showToast(data.error || 'Fehler beim Entfernen des Liedes.');
+                }
+            })
+            .catch(error => {
+                console.error('Error details:', error);
+                // Restore item state on error
+                originalButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                originalButton.classList.remove('active');
+                songItem.classList.remove('deleting');
+                
+                let errorMsg = 'Fehler bei der Verbindung zum Server';
+                if (error && error.message) {
+                    errorMsg += ': ' + error.message;
+                }
+                showToast(errorMsg);
             });
         });
     }

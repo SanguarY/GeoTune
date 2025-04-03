@@ -2,6 +2,63 @@
 
 {% block title %}GeoTune - Musik entdecken{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Button styles für die Startseite - basierend auf dem Playlist-Formular */
+    .btn-custom-primary {
+        background-color: var(--primary);
+        color: var(--white);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50px;
+        padding: 0.625rem 1.5rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+    
+    .btn-custom-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(var(--color-primary-rgb), 0.2);
+        color: var(--white);
+        text-decoration: none;
+    }
+    
+    .btn-custom-primary i {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-custom-secondary {
+        background-color: var(--white);
+        color: var(--gray-700);
+        border: 1px solid var(--gray-300);
+        border-radius: 50px;
+        padding: 0.625rem 1.5rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+    
+    .btn-custom-secondary:hover {
+        background-color: var(--gray-100);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        color: var(--gray-700);
+        text-decoration: none;
+    }
+    
+    .btn-custom-secondary i {
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="hero rounded-lg">
     <div class="hero-pattern"></div>
@@ -11,11 +68,11 @@
                 <h1 class="hero-title">Willkommen bei GeoTune!</h1>
                 <p class="hero-text">Entdecke Musik auf eine völlig neue Art. Finde Playlists in deiner Nähe, teile deine Lieblingslieder und verbinde dich mit Gleichgesinnten.</p>
                 <div class="d-flex flex-wrap gap-2 mt-4">
-                    <a class="btn btn-primary btn-lg" href="{% url 'playlists_in_der_naehe' %}">
+                    <a class="btn-custom-primary" href="{% url 'playlists_in_der_naehe' %}">
                         <i class="fas fa-map-marker-alt"></i> Playlists in der Nähe finden
                     </a>
                     {% if not user.is_authenticated %}
-                    <a class="btn btn-outline-primary btn-lg" href="{% url 'register' %}">
+                    <a class="btn-custom-secondary" href="{% url 'register' %}">
                         <i class="fas fa-user-plus"></i> Registrieren
                     </a>
                     {% endif %}

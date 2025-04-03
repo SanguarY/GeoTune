@@ -3,61 +3,188 @@
 {% block title %}Anmelden - GeoTune{% endblock %}
 
 {% block content %}
-<div class="playlist-form-container">
-    <div class="playlist-form-card shadow-lg">
-        <div class="playlist-form-header">
-            <h3 class="d-flex align-items-center">
-                <i class="fas fa-sign-in-alt me-3"></i> Bei GeoTune anmelden
-            </h3>
-            <p>Melde dich an, um deine Playlists zu verwalten und neue Musik zu entdecken!</p>
-        </div>
-        
-        <div class="playlist-form-body">
-            <!-- Login-Formular -->
-            <form method="post" class="playlist-form needs-validation" novalidate>
-                {% csrf_token %}
+<style>
+    .password-reset-link {
+        transition: all 0.2s ease-in-out;
+    }
+    .password-reset-link:hover {
+        color: #6c757d !important;
+        text-decoration: underline !important;
+        transform: translateY(-1px);
+    }
+    
+    /* Anpassungen basierend auf playlists_in_der_naehe */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h3 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Angepasste Alert-Box mit leicht orangenem Hintergrund */
+    .alert-custom-info {
+        background-color: rgba(var(--primary-rgb), 0.05);
+        border: 1px solid rgba(var(--primary-rgb), 0.1);
+        border-left: 4px solid var(--primary);
+        color: var(--dark);
+    }
+    
+    .alert-custom-info i {
+        color: var(--primary);
+    }
+    
+    /* Button styles based on landing page */
+    .btn-custom-primary {
+        background-color: var(--primary);
+        color: var(--white);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50px;
+        padding: 0.5rem 1.75rem 0.5rem 2rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+    
+    .btn-custom-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(var(--color-primary-rgb), 0.2);
+        color: var(--white);
+        text-decoration: none;
+    }
+    
+    .btn-custom-primary i {
+        margin-right: 0.5rem;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-custom-secondary {
+        background-color: var(--white);
+        color: var(--gray-700);
+        border: 1px solid var(--gray-300);
+        border-radius: 50px;
+        padding: 0.5rem 1.75rem 0.5rem 2rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+    
+    .btn-custom-secondary:hover {
+        background-color: var(--gray-100);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        color: var(--gray-700);
+        text-decoration: none;
+    }
+    
+    .btn-custom-secondary i {
+        margin-right: 0.5rem;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow mb-4">
+            <div class="custom-card-header">
+                <i class="fas fa-sign-in-alt fa-lg"></i>
+                <h3 class="mb-0">Bei GeoTune anmelden</h3>
+            </div>
+            
+            <div class="card-body p-4">
+                <p class="mb-4">Melde dich an, um deine Playlists zu verwalten und neue Musik zu entdecken!</p>
                 
-                {% if form.errors %}
-                <div class="alert alert-danger mb-4">
-                    <div class="d-flex">
-                        <div class="me-3">
-                            <i class="fas fa-exclamation-circle fa-2x"></i>
-                        </div>
-                        <div>
-                            <h5 class="alert-heading">Anmeldung fehlgeschlagen</h5>
-                            <p class="mb-0">Bitte überprüfe deinen Benutzernamen und dein Passwort.</p>
+                <!-- Login-Formular -->
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-custom-info mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-exclamation-circle fa-2x"></i>
+                            </div>
+                            <div>
+                                <h5 class="alert-heading">Anmeldung fehlgeschlagen</h5>
+                                <p class="mb-0">Bitte überprüfe deinen Benutzernamen und dein Passwort.</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-                {% endif %}
-                
-                <div class="mb-4">
-                    <label for="id_username" class="form-label">
-                        <i class="fas fa-user"></i> Benutzername
-                    </label>
-                    <input type="text" name="username" class="form-control" id="id_username" placeholder="Dein Benutzername" required>
-                </div>
-                
-                <div class="mb-4">
-                    <label for="id_password" class="form-label">
-                        <i class="fas fa-lock"></i> Passwort
-                    </label>
-                    <input type="password" name="password" class="form-control" id="id_password" placeholder="Dein Passwort" required>
-                    <div class="form-text">
-                        <a href="#" class="text-primary">Passwort vergessen?</a>
+                    {% endif %}
+                    
+                    <div class="mb-4">
+                        <label for="id_username" class="form-label">
+                            <i class="fas fa-user"></i> Benutzername
+                        </label>
+                        <input type="text" name="username" class="form-control" id="id_username" placeholder="Dein Benutzername" required>
+                        <div class="invalid-feedback username-error"></div>
                     </div>
-                </div>
-                
-                <!-- Form Actions -->
-                <div class="form-actions">
-                    <a href="{% url 'register' %}" class="btn-cancel">
-                        <i class="fas fa-user-plus me-2"></i>Registrieren
-                    </a>
-                    <button type="submit" class="btn-submit">
-                        <i class="fas fa-sign-in-alt me-2"></i>Anmelden
-                    </button>
-                </div>
-            </form>
+                    
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">
+                            <i class="fas fa-lock"></i> Passwort
+                        </label>
+                        <input type="password" name="password" class="form-control" id="id_password" placeholder="Dein Passwort" required>
+                        <div class="invalid-feedback password-error"></div>
+                    </div>
+                    
+                    <div class="mb-4 text-start">
+                        <a href="{% url 'password_reset' %}" class="text-muted password-reset-link">
+                            <i class="fas fa-key me-1"></i>Passwort vergessen?
+                        </a>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'register' %}" class="btn-custom-secondary">
+                            <i class="fas fa-user-plus"></i> Registrieren
+                        </a>
+                        <button type="submit" class="btn-custom-primary">
+                            <i class="fas fa-sign-in-alt"></i> Anmelden
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -66,55 +193,45 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Elemente abrufen
-    const form = document.querySelector('.playlist-form');
+    const form = document.querySelector('.needs-validation');
     const usernameInput = document.getElementById('id_username');
     const passwordInput = document.getElementById('id_password');
+    const usernameError = document.querySelector('.username-error');
+    const passwordError = document.querySelector('.password-error');
     
     // Funktion zum Anzeigen von Fehlermeldungen
-    function showError(input, message) {
-        // Falls bereits ein Fehlermeldungselement existiert, entferne es
-        const existingError = input.parentNode.querySelector('.custom-invalid-feedback');
-        if (existingError) {
-            existingError.remove();
-        }
-        
+    function showError(input, errorElement, message) {
         // Wenn keine Nachricht angegeben, nichts anzeigen
         if (!message) return;
         
-        // Fehlermeldung erstellen und anzeigen
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'invalid-feedback d-block custom-invalid-feedback';
-        errorDiv.textContent = message;
-        input.parentNode.appendChild(errorDiv);
+        // Fehlermeldung anzeigen
+        errorElement.textContent = message;
         
         // Input-Element als ungültig markieren
         input.classList.add('is-invalid');
     }
     
     // Funktion zum Entfernen von Fehlermeldungen
-    function clearError(input) {
-        const existingError = input.parentNode.querySelector('.custom-invalid-feedback');
-        if (existingError) {
-            existingError.remove();
-        }
+    function clearError(input, errorElement) {
+        errorElement.textContent = '';
         input.classList.remove('is-invalid');
     }
     
     // Live-Validierung für Benutzernamen
     usernameInput.addEventListener('blur', function() {
         if (this.value.trim() === '') {
-            showError(this, 'Bitte gib deinen Benutzernamen ein.');
+            showError(this, usernameError, 'Bitte gib deinen Benutzernamen ein.');
         } else {
-            clearError(this);
+            clearError(this, usernameError);
         }
     });
     
     // Live-Validierung für Passwort
     passwordInput.addEventListener('blur', function() {
         if (this.value.trim() === '') {
-            showError(this, 'Bitte gib dein Passwort ein.');
+            showError(this, passwordError, 'Bitte gib dein Passwort ein.');
         } else {
-            clearError(this);
+            clearError(this, passwordError);
         }
     });
     
@@ -124,13 +241,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Benutzername validieren
         if (usernameInput.value.trim() === '') {
-            showError(usernameInput, 'Bitte gib deinen Benutzernamen ein.');
+            showError(usernameInput, usernameError, 'Bitte gib deinen Benutzernamen ein.');
             isValid = false;
         }
         
         // Passwort validieren
         if (passwordInput.value.trim() === '') {
-            showError(passwordInput, 'Bitte gib dein Passwort ein.');
+            showError(passwordInput, passwordError, 'Bitte gib dein Passwort ein.');
             isValid = false;
         }
         

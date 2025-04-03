@@ -1,0 +1,390 @@
+{% extends 'geotune/base.html' %}
+{% load static %}
+
+{% block title %}Deine Punkte | GeoTune{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom card header styles */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h3, 
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Custom alert styles */
+    .alert-custom-info {
+        color: var(--dark);
+        background-color: var(--gray-100);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-custom-info i {
+        color: var(--gray-600);
+        margin-right: 0.5rem;
+    }
+    
+    /* Card and container styles */
+    .gamification-card {
+        background-color: var(--white);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        border: none;
+        margin-bottom: 2rem;
+    }
+    
+    /* Points overview styles */
+    .points-display {
+        background: linear-gradient(to bottom, rgba(var(--color-primary-rgb), 0.05) 0%, rgba(255, 255, 255, 1) 40%);
+        padding: 2rem;
+        text-align: center;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+    
+    .points-total {
+        font-size: 3rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .progress {
+        height: 12px;
+        border-radius: 6px;
+        margin: 1.5rem 0 0.5rem;
+        background-color: var(--gray-200);
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        background-color: var(--primary);
+        border-radius: 6px;
+    }
+    
+    /* Activity icons styling */
+    .activity-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: var(--gray-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .activity-icon i {
+        font-size: 1.5rem;
+    }
+    
+    .activity-details h5 {
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+    }
+    
+    .activity-details p {
+        color: var(--gray-600);
+        margin-bottom: 0;
+    }
+    
+    /* Custom pagination styles - replacing blue with primary color */
+    .pagination .page-link {
+        color: var(--primary);
+        background-color: var(--white);
+        border-color: var(--gray-300);
+    }
+    
+    .pagination .page-link:hover {
+        color: var(--primary-dark);
+        background-color: var(--gray-100);
+        border-color: var(--gray-300);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        color: var(--gray-500);
+    }
+    
+    /* Remove any blue focus effects */
+    .page-link:focus {
+        box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.25);
+    }
+    
+    /* Success badge styling - change from green to a warm color */
+    .badge.bg-success {
+        background-color: #D35400 !important; /* Darker orange */
+    }
+    
+    /* Table customization */
+    .table-light {
+        background-color: var(--gray-100);
+    }
+    
+    /* Icon colors */
+    .text-primary {
+        color: var(--primary) !important;
+    }
+    
+    /* Additional overrides for any blue focus effects */
+    .form-control:focus, 
+    .form-select:focus, 
+    .form-check-input:focus,
+    .btn:focus {
+        box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.25) !important;
+        border-color: var(--primary) !important;
+    }
+    
+    /* Fix for Bootstrap buttons */
+    .btn-primary {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+    
+    .btn-primary:hover, 
+    .btn-primary:active, 
+    .btn-primary:focus {
+        background-color: var(--primary-dark) !important;
+        border-color: var(--primary-dark) !important;
+    }
+    
+    /* Override any remaining blue accents */
+    .btn-link {
+        color: var(--primary);
+    }
+    
+    .btn-link:hover {
+        color: var(--primary-dark);
+    }
+    
+    a {
+        color: var(--primary);
+    }
+    
+    a:hover {
+        color: var(--primary-dark);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Points Overview Card -->
+            <div class="gamification-card">
+                <div class="custom-card-header">
+                    <i class="bi bi-trophy"></i>
+                    <h3 class="mb-0">Deine GeoTune Punkte</h3>
+                </div>
+                <div class="card-body">
+                    <div class="points-display mb-4">
+                        <div class="points-total">{{ total_punkte }}</div>
+                        <p class="lead mb-0">Gesammelte Punkte</p>
+                        
+                        <div class="progress mt-3">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ level_progress }}%;" 
+                                 aria-valuenow="{{ level_progress }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                        <p class="mt-2">Level {{ current_level }} - {{ punkte_bis_naechstes_level }} Punkte bis Level {{ naechstes_level }}</p>
+                    </div>
+                    
+                    <h4 class="mb-3">Punkteübersicht</h4>
+                    
+                    {% if punkte_liste %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Aktivität</th>
+                                        <th>Punkte</th>
+                                        <th>Datum</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for punkt in punkte_liste %}
+                                        <tr>
+                                            <td>
+                                                {% if punkt.aktivitaet == 'anmeldung' %}
+                                                    <i class="bi bi-box-arrow-in-right text-primary me-2"></i>Tägliche Anmeldung
+                                                {% elif punkt.aktivitaet == 'playlist_erstellen' %}
+                                                    <i class="bi bi-music-note-list text-primary me-2"></i>Playlist erstellt
+                                                {% elif punkt.aktivitaet == 'kommentar' %}
+                                                    <i class="bi bi-chat-left-text text-primary me-2"></i>Kommentar geschrieben
+                                                {% elif punkt.aktivitaet == 'freund_einladen' %}
+                                                    <i class="bi bi-people text-primary me-2"></i>Freund eingeladen
+                                                {% elif punkt.aktivitaet == 'event_teilnahme' %}
+                                                    <i class="bi bi-calendar-event text-primary me-2"></i>Event-Teilnahme
+                                                {% else %}
+                                                    <i class="bi bi-award text-primary me-2"></i>{{ punkt.get_aktivitaet_display }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge" style="background-color: #D35400;">+{{ punkt.punktewert }}</span>
+                                            </td>
+                                            <td>{{ punkt.datum|date:"d.m.Y H:i" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if punkte_liste.has_other_pages %}
+                            <nav aria-label="Punkte-Navigation" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    {% if punkte_liste.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ punkte_liste.previous_page_number }}" aria-label="Vorherige">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <a class="page-link" href="#" aria-label="Vorherige">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for i in punkte_liste.paginator.page_range %}
+                                        {% if punkte_liste.number == i %}
+                                            <li class="page-item active"><a class="page-link" style="background-color: var(--primary); border-color: var(--primary);" href="#">{{ i }}</a></li>
+                                        {% else %}
+                                            <li class="page-item"><a class="page-link" style="color: var(--primary);" href="?page={{ i }}">{{ i }}</a></li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if punkte_liste.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ punkte_liste.next_page_number }}" aria-label="Nächste">
+                                                <span aria-hidden="true">&raquo;</span>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <a class="page-link" href="#" aria-label="Nächste">
+                                                <span aria-hidden="true">&raquo;</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-custom-info">
+                            <i class="bi bi-info-circle"></i>Du hast noch keine Punkte gesammelt. Beginne mit Aktivitäten in GeoTune, um Punkte zu verdienen!
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Activities Card -->
+            <div class="gamification-card">
+                <div class="custom-card-header">
+                    <i class="bi bi-stars"></i>
+                    <h5 class="mb-0">So kannst du Punkte sammeln</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row row-cols-1 row-cols-md-2 g-4">
+                        <div class="col">
+                            <div class="d-flex align-items-center">
+                                <div class="activity-icon">
+                                    <i class="bi bi-box-arrow-in-right text-primary"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <h5>Tägliche Anmeldung</h5>
+                                    <p>5 Punkte pro Tag</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col">
+                            <div class="d-flex align-items-center">
+                                <div class="activity-icon">
+                                    <i class="bi bi-music-note-list text-primary"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <h5>Playlist erstellen</h5>
+                                    <p>20 Punkte pro Playlist</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col">
+                            <div class="d-flex align-items-center">
+                                <div class="activity-icon">
+                                    <i class="bi bi-chat-left-text text-primary"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <h5>Kommentare schreiben</h5>
+                                    <p>10 Punkte pro Kommentar</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col">
+                            <div class="d-flex align-items-center">
+                                <div class="activity-icon">
+                                    <i class="bi bi-people text-primary"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <h5>Freunde einladen</h5>
+                                    <p>50 Punkte pro Einladung</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col">
+                            <div class="d-flex align-items-center">
+                                <div class="activity-icon">
+                                    <i class="bi bi-calendar-event text-primary"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <h5>Event-Teilnahme</h5>
+                                    <p>30 Punkte pro Event</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

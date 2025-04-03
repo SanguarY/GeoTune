@@ -36,74 +36,224 @@
     
     /* List item styling */
     .connection-item {
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.5rem;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.75rem;
         border-radius: var(--border-radius);
         border: 1px solid var(--gray-200);
         transition: all 0.3s ease;
+        background-color: white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     }
     
     .connection-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        border-color: var(--gray-300);
     }
     
     /* Badge styling */
     .badge-custom {
-        padding: 0.35rem 0.65rem;
+        padding: 0.4rem 0.8rem;
         border-radius: 30px;
         font-size: 0.75rem;
         font-weight: 500;
     }
     
     .badge-pending {
-        background-color: rgba(var(--accent-rgb), 0.2);
-        color: var(--accent-dark);
+        background-color: rgba(var(--primary-rgb), 0.15);
+        color: var(--primary);
+        border: 1px solid rgba(var(--primary-rgb), 0.2);
     }
     
     /* Button styling */
     .btn-action {
         border-radius: 50px;
-        padding: 0.4rem 0.85rem;
+        padding: 0.4rem 1rem;
         font-weight: 500;
         font-size: 0.85rem;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-action i {
+        margin-right: 0.25rem;
     }
     
     .btn-accept {
-        background-color: var(--success);
+        background-color: var(--primary);
         color: var(--white);
         border: none;
+        box-shadow: 0 2px 5px rgba(var(--primary-rgb), 0.3);
     }
     
     .btn-accept:hover {
-        background-color: var(--success-dark);
+        background-color: var(--primary-dark);
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(var(--success-rgb), 0.2);
+        box-shadow: 0 5px 10px rgba(var(--primary-rgb), 0.4);
+        color: white;
     }
     
     .btn-reject {
-        background-color: var(--danger, #dc3545);
-        color: var(--white);
-        border: none;
+        background-color: transparent;
+        color: var(--gray-600);
+        border: 1px solid var(--gray-400);
     }
     
     .btn-reject:hover {
-        background-color: var(--danger-dark, #c82333);
+        background-color: var(--gray-200);
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        color: var(--gray-700);
     }
     
+    /* Button styling for block button in active connections */
     .btn-block {
         background-color: transparent;
-        color: var(--danger, #dc3545);
-        border: 1px solid var(--danger, #dc3545);
+        color: var(--gray-600);
+        border: 1px solid var(--gray-400);
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        min-height: 36px;
+        border-radius: 50%;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        position: relative;
     }
     
     .btn-block:hover {
-        background-color: var(--danger, #dc3545);
-        color: var(--white);
+        background-color: rgba(var(--primary-rgb), 0.1);
+        color: var(--primary);
+        border-color: var(--primary);
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+        box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.15);
+    }
+    
+    .btn-block i {
+        margin: 0;
+        font-size: 14px;
+        position: absolute;
+        top: 50%;
+        left: 49%; /* Adjusting slightly to the left */
+        transform: translate(-50%, -50%);
+    }
+    
+    /* Primary button styling with hover effects */
+    .btn-primary {
+        background-color: var(--primary);
+        color: var(--white);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50px;
+        padding: 0.625rem 1.5rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(var(--color-primary-rgb), 0.2);
+        color: var(--white);
+        text-decoration: none;
+    }
+    
+    .btn-primary i {
+        margin-right: 0.5rem;
+    }
+    
+    .btn-custom-primary {
+        background: linear-gradient(45deg, var(--primary), var(--primary-light));
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 30px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.3);
+        text-decoration: none;
+    }
+    
+    .btn-custom-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(var(--primary-rgb), 0.4);
+        color: white;
+    }
+    
+    .btn-custom-primary i {
+        margin-right: 0.5rem;
+    }
+    
+    /* Profile images in connection items */
+    .connection-avatar {
+        width: 40px;
+        height: 40px;
+        min-width: 40px; /* Prevent shrinking */
+        border-radius: 50%;
+        overflow: hidden;
+        margin-right: 0.75rem;
+        border: 2px solid white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        background-color: var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-600);
+        font-weight: 600;
+        flex-shrink: 0; /* Prevent avatar from shrinking */
+    }
+    
+    .connection-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    /* Empty state styling */
+    .empty-state {
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+    
+    .empty-state-icon {
+        font-size: 2.5rem;
+        color: var(--gray-400);
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state h5 {
+        color: var(--gray-700);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+        color: var(--gray-600);
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Card styling */
+    .card {
+        border: none;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
     }
 </style>
 {% endblock %}
@@ -118,7 +268,7 @@
                     <i class="fas fa-bell"></i>
                     <h4 class="mb-0">Erhaltene Anfragen 
                         {% if erhaltene_anfragen %}
-                            <span class="badge badge-custom badge-pending">{{ erhaltene_anfragen|length }}</span>
+                            <span class="badge badge-custom badge-pending ms-2">{{ erhaltene_anfragen|length }}</span>
                         {% endif %}
                     </h4>
                 </div>
@@ -127,11 +277,22 @@
                         <div class="connection-list">
                             {% for anfrage in erhaltene_anfragen %}
                             <div class="connection-item">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <a href="{% url 'nutzerprofil' anfrage.nutzer1.id %}" class="text-decoration-none">
-                                        <h5 class="mb-0">{{ anfrage.nutzer1.username }}</h5>
-                                    </a>
-                                    <small class="text-muted">{{ anfrage.erstellungsdatum|date:"d.m.Y" }}</small>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="connection-avatar">
+                                            {% if anfrage.nutzer1.profilbild %}
+                                                <img src="{{ anfrage.nutzer1.profilbild.url }}" alt="{{ anfrage.nutzer1.username }}">
+                                            {% else %}
+                                                {{ anfrage.nutzer1.username|first|upper }}
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <a href="{% url 'nutzerprofil' anfrage.nutzer1.id %}" class="text-decoration-none">
+                                                <h5 class="mb-0">{{ anfrage.nutzer1.username }}</h5>
+                                            </a>
+                                            <small class="text-muted">{{ anfrage.erstellungsdatum|date:"d.m.Y" }}</small>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="d-flex justify-content-end">
                                     <a href="{% url 'verbindung_status_aendern' anfrage.id 'akzeptiert' %}" class="btn btn-action btn-accept me-2">
@@ -145,7 +306,13 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted">Keine ausstehenden Anfragen.</p>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="fas fa-bell-slash"></i>
+                            </div>
+                            <h5>Keine Anfragen</h5>
+                            <p class="text-muted">Du hast keine ausstehenden Verbindungsanfragen.</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -164,11 +331,20 @@
                             {% for anfrage in gesendete_anfragen %}
                             <div class="connection-item">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <a href="{% url 'nutzerprofil' anfrage.nutzer2.id %}" class="text-decoration-none">
-                                            <h5 class="mb-0">{{ anfrage.nutzer2.username }}</h5>
-                                        </a>
-                                        <small class="text-muted">Gesendet am {{ anfrage.erstellungsdatum|date:"d.m.Y" }}</small>
+                                    <div class="d-flex align-items-center">
+                                        <div class="connection-avatar">
+                                            {% if anfrage.nutzer2.profilbild %}
+                                                <img src="{{ anfrage.nutzer2.profilbild.url }}" alt="{{ anfrage.nutzer2.username }}">
+                                            {% else %}
+                                                {{ anfrage.nutzer2.username|first|upper }}
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <a href="{% url 'nutzerprofil' anfrage.nutzer2.id %}" class="text-decoration-none">
+                                                <h5 class="mb-0">{{ anfrage.nutzer2.username }}</h5>
+                                            </a>
+                                            <small class="text-muted">Gesendet am {{ anfrage.erstellungsdatum|date:"d.m.Y" }}</small>
+                                        </div>
                                     </div>
                                     <span class="badge badge-custom badge-pending">Ausstehend</span>
                                 </div>
@@ -176,7 +352,16 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted">Keine gesendeten Anfragen.</p>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <h5>Keine Anfragen</h5>
+                            <p class="text-muted">Du hast keine gesendeten Verbindungsanfragen.</p>
+                            <a href="{% url 'nutzer_empfehlungen' %}" class="btn-primary">
+                                <i class="fas fa-users"></i> Nutzer finden
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -195,20 +380,33 @@
                             {% for verbindung in aktive_verbindungen %}
                             <div class="connection-item">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <a href="{% url 'nutzerprofil' verbindung.nutzer.id %}" class="text-decoration-none">
-                                        <h5 class="mb-0">{{ verbindung.nutzer.username }}</h5>
-                                    </a>
-                                    <a href="{% url 'verbindung_status_aendern' verbindung.verbindung.id 'blockiert' %}" class="btn btn-action btn-block">
-                                        <i class="fas fa-ban"></i>
+                                    <div class="d-flex align-items-center">
+                                        <div class="connection-avatar">
+                                            {% if verbindung.nutzer.profilbild %}
+                                                <img src="{{ verbindung.nutzer.profilbild.url }}" alt="{{ verbindung.nutzer.username }}">
+                                            {% else %}
+                                                {{ verbindung.nutzer.username|first|upper }}
+                                            {% endif %}
+                                        </div>
+                                        <a href="{% url 'nutzerprofil' verbindung.nutzer.id %}" class="text-decoration-none">
+                                            <h5 class="mb-0">{{ verbindung.nutzer.username }}</h5>
+                                        </a>
+                                    </div>
+                                    <a href="{% url 'verbindung_status_aendern' verbindung.verbindung.id 'blockiert' %}" class="btn btn-block" title="Verbindung blockieren" aria-label="Verbindung blockieren">
+                                        <i class="fas fa-ban" aria-hidden="true"></i>
                                     </a>
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted">Keine aktiven Verbindungen.</p>
-                        <div class="text-center mt-3">
-                            <a href="{% url 'nutzer_empfehlungen' %}" class="btn-custom-primary">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h5>Keine Verbindungen</h5>
+                            <p class="text-muted">Du hast noch keine aktiven Verbindungen.</p>
+                            <a href="{% url 'nutzer_empfehlungen' %}" class="btn-primary">
                                 <i class="fas fa-users"></i> Nutzer finden
                             </a>
                         </div>

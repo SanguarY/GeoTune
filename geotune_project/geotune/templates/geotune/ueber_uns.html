@@ -2,11 +2,78 @@
 
 {% block title %}Über GeoTune - Entdecke Musik auf neue Weise{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Custom card header styles (similar to feature-card-primary) */
+    .custom-card-header {
+        position: relative;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--gray-200);
+        font-weight: 600;
+    }
+    
+    .custom-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background-color: var(--primary);
+    }
+    
+    .custom-card-header h5 {
+        margin-bottom: 0;
+        color: var(--dark);
+    }
+    
+    .custom-card-header i {
+        margin-right: 0.75rem;
+        color: var(--primary);
+    }
+    
+    /* Feature list styling */
+    .feature-list {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .feature-list li {
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .feature-list li i {
+        color: var(--primary);
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    
+    /* Card styling */
+    .card {
+        border: 0;
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+    
+    .info-card {
+        border: 0;
+        box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+        border-radius: var(--border-radius);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h1 class="h2 mb-0"><i class="fas fa-info-circle me-2"></i>Über GeoTune</h1>
+    <div class="card">
+        <div class="custom-card-header">
+            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Über GeoTune</h5>
         </div>
         <div class="card-body p-4">
             <div class="row">
@@ -18,10 +85,10 @@
                     <p>Wir möchten Menschen durch Musik verbinden und neue Wege schaffen, um Orte und Erlebnisse zu entdecken. Mit GeoTune kannst du:</p>
                     
                     <ul class="feature-list mb-5">
-                        <li><i class="fas fa-map-marker-alt text-primary me-2"></i> Playlists an bestimmten Orten entdecken</li>
-                        <li><i class="fas fa-music text-primary me-2"></i> Deine eigenen Playlists erstellen und an Orten hinterlegen</li>
-                        <li><i class="fas fa-search text-primary me-2"></i> Auf musikalische Schatzsuche gehen</li>
-                        <li><i class="fas fa-users text-primary me-2"></i> Dich mit Gleichgesinnten verbinden</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Playlists an bestimmten Orten entdecken</li>
+                        <li><i class="fas fa-music"></i> Deine eigenen Playlists erstellen und an Orten hinterlegen</li>
+                        <li><i class="fas fa-search"></i> Auf musikalische Schatzsuche gehen</li>
+                        <li><i class="fas fa-users"></i> Dich mit Gleichgesinnten verbinden</li>
                     </ul>
                     
                     <h2 class="h3 mb-4">Das Team</h2>
@@ -29,9 +96,9 @@
                 </div>
                 
                 <div class="col-md-4">
-                    <div class="card mb-4 border-0 shadow-sm">
+                    <div class="info-card mb-4">
                         <div class="card-body bg-light rounded">
-                            <h3 class="h4 mb-3"><i class="fas fa-lightbulb text-accent me-2"></i>So funktioniert's</h3>
+                            <h3 class="h4 mb-3"><i class="fas fa-lightbulb text-primary me-2"></i>So funktioniert's</h3>
                             <ol class="mb-0">
                                 <li class="mb-3">Erstelle ein Konto und personalisiere dein Profil</li>
                                 <li class="mb-3">Erstelle deine eigenen Playlists und verknüpfe sie mit besonderen Orten</li>
@@ -42,11 +109,11 @@
                     </div>
                     
                     {% load static %}
-                    <img src="{% static 'media/GeoTune_Logo.jpg' %}" alt="GeoTune Logo" class="img-fluid rounded mb-4">
+                    <img src="{% static 'media/GeoTune_Logo.jpg' %}" alt="GeoTune Logo" class="img-fluid rounded shadow mb-4">
                     
-                    <div class="card border-0 bg-accent rounded">
+                    <div class="info-card border-0 bg-light rounded">
                         <div class="card-body">
-                            <h3 class="h5 mb-3"><i class="fas fa-envelope me-2"></i>Kontakt</h3>
+                            <h3 class="h5 mb-3"><i class="fas fa-envelope me-2 text-primary"></i>Kontakt</h3>
                             <p class="mb-3">Hast du Fragen oder Feedback? Wir freuen uns, von dir zu hören!</p>
                             <p class="mb-0">
                                 <strong>E-Mail:</strong> info@geotune.de<br>
